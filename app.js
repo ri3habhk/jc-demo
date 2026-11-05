@@ -18,6 +18,7 @@
   const soundtrack = window.QUIET_CURRENT;
   const engine = new TaanAudio(soundtrack);
   let activeUpload = null;
+  let referenceStartTimer = null;
   let activeLoop = -1, audioSource = 'score', completedRounds = 0;
   let firstRound = true, loopStart=0, lastAudioLoop=-1;
   const urlCache = new Map();
@@ -52,7 +53,8 @@
   function renderPreview() {
     const input = inputs.find(i=>i.id===selectedId);
     const card = $('#preview-card');
-    const show=input&&!input.placeholder&&['image','video','midi','script'].includes(mediaKind(input))&&(pending.includes(input.id)||(phase==='generating'&&currentMessage?.attachments.includes(input.id)));
+    const referenceIntro=phase==='generating'&&firstRound&&completedRounds>0&&!currentMessage;
+    const show=!referenceIntro&&input&&!input.placeholder&&['image','video','midi','script'].includes(mediaKind(input))&&(pending.includes(input.id)||(phase==='generating'&&currentMessage?.attachments.includes(input.id)));
     card.hidden=!show;document.body.classList.toggle('has-preview',!!show);if(!show)return;
     let media;
     if(mediaKind(input)==='image'||input.thumb) media=`<img class="preview-image" src="${escape(previewUrl(input))}" alt="${escape(input.name)}" draggable="false">`;
@@ -70,6 +72,7 @@
   function attachInput(id, focus = true) {
     const input=inputs.find(i=>i.id===id);if(!input)return;
     openChat();
+    if(input.kind==='audio')scheduleReferenceStart();
     if(input.placeholder){browse(input.kind);return;}
     selectedId=id;if(!pending.includes(id))pending.push(id);
     if(mediaKind(input)==='audio'&&input.file&&phase==='idle')setAudio(input);
@@ -82,6 +85,25 @@
   }
   function browse(kind) {
     closeInputMenu();const input=$('#file-input');input.accept='';input.dataset.kind=kind||'';input.value='';input.click();
+  }
+  function cancelReferenceStart() {
+    if(referenceStartTimer!==null)clearTimeout(referenceStartTimer);
+    referenceStartTimer=null;
+  }
+  function scheduleReferenceStart() {
+    if(phase!=='idle'||referenceStartTimer!==null)return;
+    // Unlock and load audio inside the click gesture; remain silent for 2s.
+    primeAudio();
+    referenceStartTimer=setTimeout(()=>{
+      referenceStartTimer=null;
+      if(phase!=='idle')return;
+      if(!activeAudioId)selectScoreLoop(0);
+      // The Reference audio shortcut starts sound alongside the generation
+      // motion. It never submits a prompt or invents a chat message.
+      completedRounds=Math.max(1,iteration+1);
+      beginGeneration(null,true);
+    },2000);
+    updateUI();
   }
   function closeInputMenu(focus=false){$('#input-menu').hidden=true;$('#attach-input').setAttribute('aria-expanded','false');if(focus)$('#attach-input').focus();}
   function toggleInputMenu(){
@@ -202,6 +224,7 @@
     else toast('Idea queued for the next generation.');
   }
   function beginGeneration(message,isFirst=false) {
+    cancelReferenceStart();
     currentMessage=message;if(message)message.status='generating';iteration++;
     
     firstRound=isFirst;renderInputs();renderMessages();setPhase('generating',isFirst?durations.first:durations.generating);saveSoon();
@@ -255,7 +278,7 @@
     const applied=inputs.filter(i=>i.used).length;$('#composition-meta').textContent=`${applied} ${applied===1?'input':'inputs'} applied`;
     $('#version').textContent='v'+String(Math.max(1,iteration)).padStart(2,'0');
     $('#track-title').textContent=audioSource==='score'?(activeLoop<0?'Quiet Current':`Quiet Current · ${Math.min(activeLoop+1,soundtrack.stems.length)} / ${soundtrack.stems.length} layers`):'Your music · continuous';
-    $('#player-state').textContent=paused?'Paused':phase==='idle'?'Ready when you are':`Prompt ${phase==='prompting'?iteration+1:iteration}`;
+    $('#player-state').textContent=paused?'Paused':phase==='idle'?(referenceStartTimer!==null?'Starting…':'Ready when you are'):`Prompt ${phase==='prompting'?iteration+1:iteration}`;
     $('#play-button').innerHTML=icon(phase!=='idle'&&!paused&&!waiting?'pause':'play');
     $('#play-button').setAttribute('aria-label',phase==='idle'?'Start demo playback':paused?'Resume cycle':waiting?'Replay composition':'Pause cycle');
     $('#phase-notice-text').textContent=paused?'Take your time. The cycle is paused.':phase==='idle'?'A little direction goes a long way.':phase==='generating'?'Generating your next eight seconds.':playing?(audioSource==='score'?soundtrack.loops[activeLoop]?.title:'Your uploaded music is playing.'):queued?'Your idea is ready for the next cycle.':'Your turn. Add a direction for the next take.';
@@ -330,7 +353,7 @@
   function textDialog() {showDialog(`<span class="dialog-eyebrow">EVERY IDEA BELONGS HERE</span><h2>Put a feeling into words.</h2><label class="sr-only" for="idea-name">Idea name</label><input id="idea-name" class="dialog-input" placeholder="Name your idea" maxlength="100"><label class="sr-only" for="idea-body">Your idea</label><textarea id="idea-body" class="dialog-textarea" placeholder="A scene, a script, a feeling, a musical direction…"></textarea><button class="dialog-primary" id="save-idea">Add to my inputs</button>`);$('#save-idea').onclick=()=>{const text=$('#idea-body').value.trim();if(!text){$('#idea-body').focus();return;}const name=$('#idea-name').value.trim()||'A new direction';const input={id:crypto.randomUUID(),kind:'text',name:name.replace(/\.txt$/i,'')+'.txt',text};addInputRecord(input);attachInput(input.id,false);$('#info-dialog').close();$('#prompt-input').focus();};}
   function toast(message){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').hidden=false;toastTimer=setTimeout(()=>$('#toast').hidden=true,3800);}
   function setTheme(theme){document.documentElement.dataset.theme=theme;try{localStorage.setItem('taan-demo-theme',theme);}catch{}$('#theme-toggle').innerHTML=icon(theme==='dark'?'sun':'moon');$('#theme-toggle').title=theme==='dark'?'Switch to reference light palette':'Switch to Taan dark palette';$('#theme-toggle').setAttribute('aria-label',$('#theme-toggle').title);$('meta[name="theme-color"]').content=theme==='dark'?'#0e0b0a':'#faf8ef';}
-  function resetDemo(){activeLoop=-1;audioSource='score';completedRounds=0;loopStart=0;lastAudioLoop=-1;lastSecond=-1;engine.reset();activeUpload=null;activeAudioId=null;urlCache.forEach(url=>URL.revokeObjectURL(url));urlCache.clear();inputs=emptyInputs();selectedId=null;openChat();pending=[];messages=[];queued=null;phase='idle';paused=false;iteration=0;firstRound=true;waiting=false;currentMessage=null;$('#prompt-input').value='';$('#play-time').innerHTML='00:00 <span>/ 00:08</span>';document.body.classList.remove('paused');waveBars.forEach(b=>b.classList.remove('passed'));renderInputs();renderPending();renderMessages(false);updateUI();clearTimeout(saveTimer);saveSession();toast('A fresh composition. Start with anything.');}
+  function resetDemo(){cancelReferenceStart();activeLoop=-1;audioSource='score';completedRounds=0;loopStart=0;lastAudioLoop=-1;lastSecond=-1;engine.reset();activeUpload=null;activeAudioId=null;urlCache.forEach(url=>URL.revokeObjectURL(url));urlCache.clear();inputs=emptyInputs();selectedId=null;openChat();pending=[];messages=[];queued=null;phase='idle';paused=false;iteration=0;firstRound=true;waiting=false;currentMessage=null;$('#prompt-input').value='';$('#play-time').innerHTML='00:00 <span>/ 00:08</span>';document.body.classList.remove('paused');waveBars.forEach(b=>b.classList.remove('passed'));renderInputs();renderPending();renderMessages(false);updateUI();clearTimeout(saveTimer);saveSession();toast('A fresh composition. Start with anything.');}
   function exportSession(){const data={format:'taan-composition-demo',version:2,title:$('#project-title').value,style,exportedAt:new Date().toISOString(),timing:{initialGenerationSeconds:4,promptSeconds:8,generationSeconds:8,playbackSeconds:8,continuousAudio:true,phaseOrder:['prompt','generate','play'],scoreLoopSeconds:8,scoreLoopCount:8},soundtrack:{title:soundtrack.title,source:soundtrack.source,activeLoop:activeLoop+1,audioSource},inputs:inputs.filter(i=>!i.placeholder).map(({file,...input})=>({...input,size:file?.size,mimeType:file?.type})),ideas:messages,draft:$('#prompt-input').value,note:'Interface prototype. Uploaded files are stored in the browser and are not embedded in this JSON export.'};const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=($('#project-title').value||'taan-composition').replace(/[^a-z0-9_-]/gi,'-').toLowerCase()+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Session exported. Your original media stays in this browser.');}
   function saveSoon(){if(restoring)return;$('#save-status').textContent='Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(saveSession,350);}
   function saveSession(){if(!db){$('#save-status').textContent='Saved for this session';return;}try{const tx=db.transaction('session','readwrite');tx.objectStore('session').put({inputs,selectedId,pending,messages,iteration,style,title:$('#project-title').value,draft:$('#prompt-input').value,activeAudioId,activeLoop,audioSource,completedRounds,chatOpen},'current');tx.oncomplete=()=>$('#save-status').textContent='All changes saved';tx.onerror=()=>$('#save-status').textContent='Saved for this session';}catch{$('#save-status').textContent='Saved for this session';}}
@@ -378,7 +401,7 @@
     recognition.onerror=e=>toast(e.error==='not-allowed'?'Microphone access was not enabled. You can still type your idea.':'Voice input could not connect. Try typing your idea.');
     recognition.start();
   };
-  window.addEventListener('pagehide',()=>{clearTimeout(saveTimer);saveSession();engine.pause();});
+  window.addEventListener('pagehide',()=>{cancelReferenceStart();clearTimeout(saveTimer);saveSession();engine.pause();});
   let initialTheme='dark';try{initialTheme=localStorage.getItem('taan-demo-theme')||'dark';}catch{}setTheme(initialTheme);
   openChat();renderInputs();renderPending();renderMessages(false);updateUI();restoreSession();requestAnimationFrame(tick);
 })();

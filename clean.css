@@ -24,6 +24,8 @@
 .filled-input .input-check-empty{border-color:var(--accent)}
 .orb-wrap{top:45%;width:420px;height:420px;transition:opacity .25s;pointer-events:none}
 .orb-mark{position:absolute;width:135px;height:90px;object-fit:contain;left:50%;top:50%;transform:translate(-50%,-50%);opacity:.62;filter:sepia(.5)}
+body[data-phase=generating] .orb-mark{animation:logo-generate 8s linear infinite}
+@keyframes logo-generate{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg)}}
 .orb-glow{opacity:.35}
 [data-theme=dark] .orb{color:#a99470;opacity:.55;stroke-width:.6}
 [data-theme=light] .orb-mark{filter:invert(.45) sepia(.35)}
@@ -88,3 +90,25 @@ body.audio-running .playhead,body.paused.has-composition .playhead{display:block
 @media(max-height:800px) and (min-width:1001px){.composition-panel{padding-bottom:25px}.orb-wrap{width:330px;height:330px}.orb-mark{width:115px;height:78px}.preview-card{width:265px}.preview-image{height:155px}.preview-content{height:145px}.composer{min-height:140px}.input-card{min-height:78px}}
 @media(max-width:1000px){.workspace,.chat-open .workspace{grid-template-columns:190px minmax(0,1fr)}.inputs-panel{grid-row:1 / 3;min-height:calc(100dvh - 70px)}.composition-panel{min-height:calc(100dvh - 70px)}.chat-panel{min-height:470px}.chat-messages:empty{min-height:150px}.chat-open .chat-panel{grid-column:2}.orb-wrap{width:380px;height:380px}.input-list{max-height:720px}.player{margin-top:15px}}
 @media(max-width:620px){.workspace,.chat-open .workspace{display:flex;flex-direction:column}.inputs-panel{min-height:0;padding:19px 17px 13px}.panel-heading{margin-bottom:14px}.panel-heading h2{font-size:17px}.input-card{min-height:85px}.input-list{max-height:none}.input-card-title{font-size:11px}.input-actions{margin-top:6px}.add-input{width:100%;min-height:31px;background:transparent!important}.composition-panel{min-height:540px;padding:23px 17px 24px}.composition-heading h1{font-size:23px!important}.composition-heading p{font-size:10px}.composition-stage{min-height:320px}.orb-wrap{width:330px;height:330px;top:45%}.orb-mark{width:112px;height:76px}.player{padding:13px;margin-top:0}.preview-card{width:260px}.preview-image{height:160px}.preview-content{height:150px}.player .waveform{height:30px}.play-button{height:31px;width:31px}.player-main{gap:9px}.loop-count{font-size:8px}.chat-panel{min-height:440px;padding-top:23px}.chat-header h2{font-size:19px!important}.composer{min-height:155px}.composer textarea{font-size:14px!important}.chat-brand-mark{width:30px;height:25px}.chat-messages:empty{min-height:130px}}
+
+/* The two bottom controls share one size and one baseline. */
+:root{--bottom-control-height:108px;--bottom-control-inset:28px}
+.composition-panel,.chat-panel{padding-left:var(--bottom-control-inset);padding-right:var(--bottom-control-inset);padding-bottom:28px}
+.player,#prompt-form{box-sizing:border-box;width:100%;max-width:none;height:var(--bottom-control-height);min-height:var(--bottom-control-height);max-height:var(--bottom-control-height);margin:0;padding:12px 18px;border-radius:10px;flex-shrink:0}
+.player{display:flex;flex-direction:column;justify-content:center}
+#prompt-form{position:relative;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+#prompt-form .composer-label{height:10px;line-height:10px;margin:0;flex-shrink:0;max-width:100%;white-space:nowrap;overflow:hidden}
+#prompt-form:has(.pending-chip) .composer-label{max-width:38%}
+#prompt-form textarea{min-height:0!important;max-height:none;height:auto;flex:1;line-height:1.35;margin:0;padding:0}
+#prompt-form .composer-footer{margin:0;height:31px;min-height:31px;flex-shrink:0}
+#prompt-form .pending-attachments:empty{display:none}
+#prompt-form .pending-attachments:not(:empty){position:absolute;right:18px;top:6px;max-width:58%;height:22px;max-height:22px;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;margin:0}
+#prompt-form .pending-chip{flex-shrink:0;padding:2px 5px;font-size:9px}
+@media(min-width:1001px){
+ .chat-open .workspace{grid-template-columns:244px minmax(0,1fr) minmax(0,1fr)}
+ .chat-panel{border-left:0;box-shadow:inset 1px 0 var(--line)}
+}
+@media(min-width:1700px){.chat-open .workspace{grid-template-columns:310px minmax(0,1fr) minmax(0,1fr)}}
+@media(min-width:1001px) and (max-width:1250px){.chat-open .workspace{grid-template-columns:208px minmax(0,1fr) minmax(0,1fr)}}
+@media(max-width:1000px){:root{--bottom-control-inset:20px}}
+@media(max-width:620px){:root{--bottom-control-inset:17px}.player,#prompt-form{padding-left:13px;padding-right:13px}}

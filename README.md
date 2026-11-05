@@ -16,6 +16,8 @@ Visit http://127.0.0.1:5173. No build, package installation, API key or backend 
 
 Send the first idea to start. The initial prompt has no typing deadline.
 
+Alternatively, click the Reference audio card: exactly two seconds after the click, the music starts and the central Taan mark begins its generation rotation. The file picker still opens normally. The shortcut works without selecting a file or entering a prompt, and leaves the chat empty. Its four-second generation animation runs over the music, then the usual eight-second phases continue. Repeated clicks do not queue multiple starts; resetting the composition or submitting a prompt cancels the pending shortcut.
+
 | Round | Prompt | Generate | Play |
 | --- | --- | --- | --- |
 | 1 | Submit when ready | 4 seconds | Section 1 for 8 seconds |
@@ -47,6 +49,8 @@ The browser plays six synchronized instrument stems prepared from the original M
 Upload reference audio to replace the prepared soundtrack when that idea finishes generation. Uploaded audio plays through its full length, with a short overlapping blend at its own loop seam. It is never rewound at an eight-second UI boundary. Other uploaded files serve as visual or textual references.
 
 ## Inputs and controls
+
+The energy player and prompt box share the same width and 108-pixel height. Their top and bottom edges align on desktop; on smaller screens they stack with matching dimensions.
 
 - All six input cards, including Text, open an unrestricted native file picker. Any file can be placed in any category. The selected category stays on the left; actual file type controls preview and audio decoding.
 - Drop a file directly onto a card to use that category, or onto the panel, center or composer for automatic classification. The plus menu also supports combined inputs.

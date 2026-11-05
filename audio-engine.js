@@ -14,12 +14,18 @@
       this.fileBuffers = new WeakMap();
       this.raw = this.fetchStems().catch(() => null);
     }
-    fetchStems() {
-      return Promise.all(this.manifest.stems.map(async stem => {
-        const response = await fetch('assets/quiet-current/' + stem.file);
-        if (!response.ok) throw new Error('The soundtrack could not be loaded.');
-        return response.arrayBuffer();
-      }));
+    async fetchStems() {
+      const buffers = [];
+      // Limit simultaneous downloads so the local preview server can also
+      // serve fonts and artwork without dropping audio connections.
+      for (let i = 0; i < this.manifest.stems.length; i += 2) {
+        buffers.push(...await Promise.all(this.manifest.stems.slice(i, i + 2).map(async stem => {
+          const response = await fetch('assets/quiet-current/' + stem.file);
+          if (!response.ok) throw new Error('The soundtrack could not be loaded.');
+          return response.arrayBuffer();
+        })));
+      }
+      return buffers;
     }
     ensureContext() {
       if (this.context) return this.context;
