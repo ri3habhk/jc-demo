@@ -16,6 +16,8 @@
   let activeAudioId = null, audioUrl = null, muted = false, waiting = false, toastTimer, saveTimer, db = null, restoring = false, currentMessage = null;
   const audio = new Audio(); audio.loop = true; audio.preload = 'auto';
   const durations = {first:4000,prompting:8000,generating:8000,playing:8000};
+  const soundtrack = window.QUIET_CURRENT;
+  let activeLoop = -1, audioSource = 'score', completedRounds = 0;
   let firstRound = true, loopStart=0, lastAudioLoop=-1;
   const urlCache = new Map();
   function objectUrl(input) { if (!input.file) return input.thumb || ''; if (!urlCache.has(input.id)) urlCache.set(input.id, URL.createObjectURL(input.file)); return urlCache.get(input.id); }
@@ -67,7 +69,7 @@
     openChat();
     if(input.placeholder){if(input.kind==='text'){$('#prompt-input').focus();}else browse(input.kind);return;}
     selectedId=id;if(!pending.includes(id))pending.push(id);
-    if(input.kind==='audio'&&input.file&&!inputs.some(item=>item.used))setAudio(input);
+    if(input.kind==='audio'&&input.file&&phase==='idle')setAudio(input);
     renderInputs();renderPending();if(focus)$('#prompt-input').focus();saveSoon();
   }
   function renderPending() {
@@ -93,7 +95,7 @@
     script:['I have a script','Compose to the words.','Bring in your script','Upload a document, or paste your scene below.','script'],
     audio:['I have a reference','Capture a sound or feeling.','Upload your reference audio','MP3, WAV, M4A or FLAC · up to 250 MB','audio'],
     image:['I have an image','Start with a mood or a place.','Upload your image','JPG, PNG, WebP or GIF · up to 250 MB','image'],
-    midi:['I have a MIDI file','Build around a melody.','Upload your MIDI file','MID or MIDI · kept as a musical reference','MIDI file'],
+    midi:['I have a MIDI file','Build around a melody.','Upload your MIDI file','MID or MIDI · Quiet Current is the demo soundtrack','MIDI file'],
     text:['I have an idea','Put the feeling into words.','Tell us what you imagine','Upload text, or write your musical direction below.','text file']
   };
   let wizard=null;
@@ -158,7 +160,7 @@
       const kind=classify(file,hint), input={id:crypto.randomUUID(),name:file.name,kind,file,used:false};
       if(['text','script'].includes(kind)&&(file.type.startsWith('text/')||/\.(txt|md|fountain|json|js|py)$/i.test(file.name))) input.text=(await file.slice(0,16000).text());
       addInputRecord(input);added.push(input);pending.push(input.id);selectedId=input.id;openChat();
-      if(kind==='audio'&&!inputs.some(item=>item.used))setAudio(input);
+      if(kind==='audio'&&phase==='idle')setAudio(input);
     }
     if(added.length){renderInputs();renderPending();saveSoon();toast(added.length===1?`${added[0].name} added to your next idea.`:`${added.length} files added to your next idea.`);}
   }
@@ -190,6 +192,7 @@
     if(e)e.preventDefault();
     if(queued){toast('Your next idea is queued. You can keep a draft for the following cycle.');return;}
     const message=captureDraft();if(!message){$('#prompt-input').focus();toast('Write an idea or attach a file to begin.');return;}
+    if(!activeAudioId)selectScoreLoop(0);
     primeAudio();
     if(phase==='idle'){beginGeneration(message,true);return;}
     queued=message;updateUI();
@@ -197,8 +200,7 @@
     else toast('Idea queued for the next generation.');
   }
   function beginGeneration(message,isFirst=false) {
-    if(!message)return;
-    currentMessage=message;message.status='generating';iteration++;
+    currentMessage=message;if(message)message.status='generating';iteration++;
     
     firstRound=isFirst;renderInputs();renderMessages();setPhase('generating',isFirst?durations.first:durations.generating);saveSoon();
   }
@@ -206,15 +208,18 @@
     phase=next;phaseDuration=duration;phaseStart=performance.now();paused=false;waiting=false;document.body.classList.remove('paused');
     if(next==='playing'){
       loopStart=phaseStart;lastAudioLoop=0;
+      completedRounds=iteration;
       if(currentMessage){
         currentMessage.status='done';
         currentMessage.attachments.forEach(id=>{const item=inputs.find(i=>i.id===id);if(item)item.used=true;});
         const music=[...currentMessage.attachments].reverse().map(id=>inputs.find(i=>i.id===id)).find(item=>item?.kind==='audio'&&item.file);
         if(music)setAudio(music);
-        renderInputs();renderMessages();saveSoon();
+        renderInputs();renderMessages();
       }
+      if(audioSource==='score')selectScoreLoop(Math.min(Math.max(0,iteration-1),soundtrack.loops.length-1));
+      saveSoon();
       startAudio(true);
-    }else if(inputs.some(item=>item.used)){
+    }else if(completedRounds>0){
       if(audio.paused)startAudio(false);
     }else audio.pause();
     updateUI();
@@ -224,16 +229,16 @@
     if(phase==='playing'){firstRound=false;setPhase('prompting',durations.prompting);return;}
     if(phase==='prompting'){
       if(!queued)queued=captureDraft();
-      if(queued){const m=queued;queued=null;beginGeneration(m,false);}
-      else{waiting=true;updateUI();}
+      const message=queued;queued=null;beginGeneration(message,false);
     }
   }
   function updateComposerLabel() {
     const kind=pending.length?inputs.find(i=>i.id===pending[pending.length-1])?.kind:null;
-    $('#composer-label').textContent=(queued?'NEXT IDEA QUEUED':phase==='generating'?'GENERATING':phase==='idle'?'YOUR IDEA':'ADD YOUR NEXT IDEA')+(kind?' · '+kind.toUpperCase():'');
+    const promptNumber=phase==='prompting'||phase==='playing'?iteration+1:Math.max(1,iteration);
+    $('#composer-label').textContent=`PROMPT ${promptNumber} · `+(queued?'IDEA QUEUED':phase==='generating'?'GENERATING':'YOUR IDEA')+(kind?' · '+kind.toUpperCase():'');
     $('#send-button').disabled=!!queued||(!$('#prompt-input').value.trim()&&!pending.length);
     $('#send-button').setAttribute('aria-label',phase==='idle'?'Send first idea':'Queue next idea');
-    $('#play-button').disabled=phase==='idle'&&!inputs.some(i=>i.used)&&!pending.length&&!$('#prompt-input').value.trim();
+    $('#play-button').disabled=phase==='idle'&&!completedRounds&&!pending.length&&!$('#prompt-input').value.trim();
   }
   function updateUI() {
     document.body.dataset.phase=phase;
@@ -241,20 +246,20 @@
     $('#generation-duration').textContent=phase==='generating'&&firstRound?'4s':'8s';
     const playing=phase==='playing';
     $('#prompt-input').placeholder=phase==='generating'&&inputs.some(i=>i.used)?'The current loop keeps playing.':'Type your next musical direction…';
-    $('#loop-count').textContent=inputs.some(i=>i.used)&&phase!=='idle'?({playing:'1 / 3',prompting:'2 / 3',generating:'3 / 3'}[phase]||''):'';
-    document.body.classList.toggle('audio-running',inputs.some(i=>i.used)&&phase!=='idle'&&!paused);
+    $('#loop-count').textContent=phase==='idle'?'':({playing:'Play',prompting:'Prompt',generating:'Generate'}[phase]||'');
+    document.body.classList.toggle('audio-running',completedRounds>0&&phase!=='idle'&&!paused);
     $('#stage-label').textContent=phase==='idle'?'LISTENING TO YOUR IDEAS':phase==='generating'?'SHAPING YOUR SOUND':playing?'YOUR IDEAS, IN MOTION':'WHAT SHOULD WE FEEL NEXT?';
     $('#drop-label').textContent=phase==='generating'?'A new idea is taking shape':playing?'Keep the inspiration flowing':'Drop to shape the music';
     const applied=inputs.filter(i=>i.used).length;$('#composition-meta').textContent=`${applied} ${applied===1?'input':'inputs'} applied`;
     $('#version').textContent='v'+String(Math.max(1,iteration)).padStart(2,'0');
-    $('#track-title').textContent='8-second loop';
-    $('#player-state').textContent=paused?'Paused':playing?(activeAudioId?'Your music · looping':'Silent playback'):phase==='generating'?'Generating…':phase==='prompting'?'Your turn':'Ready when you are';
+    $('#track-title').textContent=audioSource==='score'?(activeLoop<0?'Quiet Current · 8 loops ready':`Quiet Current · ${activeLoop+1} / ${soundtrack.loops.length}`):'Your music · 8-second loop';
+    $('#player-state').textContent=paused?'Paused':phase==='idle'?'Ready when you are':`Prompt ${phase==='prompting'?iteration+1:iteration}`;
     $('#play-button').innerHTML=icon(phase!=='idle'&&!paused&&!waiting?'pause':'play');
     $('#play-button').setAttribute('aria-label',phase==='idle'?'Start demo playback':paused?'Resume cycle':waiting?'Replay composition':'Pause cycle');
-    $('#phase-notice-text').textContent=paused?'Take your time. The cycle is paused.':phase==='idle'?'A little direction goes a long way.':phase==='generating'?'Generating your next eight seconds.':playing?(activeAudioId?'Your uploaded music is playing.':'Your composition is playing silently.'):queued?'Your idea is ready for the next cycle.':waiting?'Ready when you are. Add your next idea.':'Your turn. Add a direction for the next take.';
-    $('#stage-caption').textContent=phase==='idle'?'An image. A melody. A feeling. Start anywhere.':phase==='generating'?'A little patience. A little possibility.':playing?(activeAudioId?'Your music, on repeat.':'Upload music to hear it here.'):queued?'Your next idea is in good hands.':'Keep building. One idea at a time.';
+    $('#phase-notice-text').textContent=paused?'Take your time. The cycle is paused.':phase==='idle'?'A little direction goes a long way.':phase==='generating'?'Generating your next eight seconds.':playing?(audioSource==='score'?soundtrack.loops[activeLoop]?.title:'Your uploaded music is playing.'):queued?'Your idea is ready for the next cycle.':'Your turn. Add a direction for the next take.';
+    $('#stage-caption').textContent=phase==='idle'?'An image. A melody. A feeling. Start anywhere.':phase==='generating'?'The previous loop keeps playing.':playing?'Your music, on repeat.':queued?'Your next idea is in good hands.':'Keep building. One idea at a time.';
     $('#composer-hint').textContent=queued?'Keep a draft for later':phase==='prompting'&&!waiting?'Auto-sends when time is up':'Type or drop an idea';
-    document.body.classList.toggle('has-composition',inputs.some(i=>i.used));renderPreview();updateComposerLabel();updateAudioIcon();
+    document.body.classList.toggle('has-composition',completedRounds>0);renderPreview();updateComposerLabel();updateAudioIcon();
   }
   function togglePlayback() {
     if(phase==='idle'){
@@ -264,7 +269,7 @@
     if(waiting){setPhase('playing',durations.playing);return;}
     paused=!paused;
     if(paused){pauseStarted=performance.now();audio.pause();}
-    else{const pauseDuration=performance.now()-pauseStarted;phaseStart+=pauseDuration;loopStart+=pauseDuration;if(inputs.some(i=>i.used))startAudio(false);}
+    else{const pauseDuration=performance.now()-pauseStarted;phaseStart+=pauseDuration;loopStart+=pauseDuration;if(completedRounds>0)startAudio(false);}
     document.body.classList.toggle('paused',paused);updateUI();
   }
   const waveBars=Array.from({length:150},(_,i)=>{
@@ -281,10 +286,13 @@
       if(elapsed>=phaseDuration&&!paused&&!waiting){nextPhase();elapsed=now-phaseStart;}
       const remain=waiting?0:Math.max(0,Math.ceil((phaseDuration-elapsed)/1000));
       $('#phase-countdown').textContent=waiting?'':`${String(remain).padStart(2,'0')}s`;
-      if(inputs.some(item=>item.used)){
+      $('#loop-count').textContent=paused?'Paused':`${{playing:'Play',prompting:'Prompt',generating:'Generate'}[phase]} · ${String(remain).padStart(2,'0')}s`;
+      if(completedRounds>0){
         const transportElapsed=Math.max(0,(paused?pauseStarted:now)-loopStart);
         const loopNumber=Math.floor(transportElapsed/8000),position=transportElapsed%8000,progress=position/8000;
-        if(loopNumber!==lastAudioLoop&&!paused){lastAudioLoop=loopNumber;if(activeAudioId){audio.currentTime=0;if(audio.paused)startAudio(false);}}
+        // Exact eight-second score files loop natively; avoid resetting them a
+        // second time at the animation-frame boundary. Trim longer uploads here.
+        if(loopNumber!==lastAudioLoop&&!paused){lastAudioLoop=loopNumber;if(activeAudioId&&audioSource==='upload'&&audio.duration>8.05){audio.currentTime=0;if(audio.paused)startAudio(false);}}
         $('#playhead').style.left=`${progress*100}%`;
         waveBars.forEach((bar,i)=>bar.classList.toggle('passed',i/waveBars.length<=progress));
         const sec=Math.floor(position/1000);if(sec!==lastSecond){$('#play-time').innerHTML=`00:${String(sec).padStart(2,'0')} <span>/ 00:08</span>`;lastSecond=sec;}
@@ -294,17 +302,24 @@
   }
   function setAudio(input) {
     if(activeAudioId===input.id&&audio.src)return;
+    audioSource='upload';activeLoop=-1;
     audio.pause();activeAudioId=input.id;audioUrl=objectUrl(input);audio.src=audioUrl;audio.loop=true;audio.muted=muted;audio.load();
-    if(inputs.some(i=>i.used)&&phase!=='idle'&&!paused)startAudio(true);
+    if(completedRounds>0&&phase!=='idle'&&!paused)startAudio(true);
     else primeAudio();
     updateAudioIcon();
   }
   function primeAudio() {
-    if(!activeAudioId||inputs.some(i=>i.used))return;
+    if(!activeAudioId||completedRounds>0)return;
     audio.muted=true;
     const attempt=audio.play();
     audio.pause();audio.currentTime=0;audio.muted=muted;
     if(attempt)attempt.catch(()=>{});
+  }
+  function selectScoreLoop(index) {
+    const section=soundtrack.loops[index];if(!section)return;
+    if(activeLoop===index&&audioSource==='score'&&audio.src)return;
+    audio.pause();activeLoop=index;audioSource='score';activeAudioId='quiet-current-'+section.number;
+    audio.src='assets/quiet-current/'+section.audio;audio.loop=true;audio.muted=muted;audio.load();
   }
   function startAudio(reset) {
     if(!activeAudioId)return;
@@ -313,17 +328,17 @@
     audio.play().catch(error=>{if(error.name==='NotAllowedError')toast('Click the sound button to enable your uploaded music.');else if(error.name!=='AbortError')toast('This browser cannot play that audio format. Try MP3 or WAV.');});
   }
   audio.addEventListener('error',()=>{if(activeAudioId)toast('This audio format could not be played. Try an MP3 or WAV file.');});
-  function updateAudioIcon(){const button=$('#mute-button');button.innerHTML=icon(!activeAudioId||muted?'muted':'volume');button.title=activeAudioId?(muted?'Unmute uploaded music':'Mute uploaded music'):'Upload music to add sound';button.setAttribute('aria-label',button.title);}
+  function updateAudioIcon(){const button=$('#mute-button');button.innerHTML=icon(!activeAudioId||muted?'muted':'volume');button.title=activeAudioId?(muted?'Unmute music':'Mute music'):'Upload your own music';button.setAttribute('aria-label',button.title);}
   function showDialog(content) {$('#dialog-content').innerHTML=content;$('#info-dialog').showModal();}
-  function timingDialog() {showDialog(`<span class="dialog-eyebrow">THREE PASSES. ONE LOOP.</span><h2>Keep the music moving.</h2><p>Your first idea takes 4 seconds to generate. Then the same 8-second loop plays through three passes.</p><div class="timing-row"><span>01</span>Play your composition<b>8 seconds</b></div><div class="timing-row"><span>02</span>Add your next idea<b>8 seconds</b></div><div class="timing-row"><span>03</span>Generate the next input<b>8 seconds</b></div><p>The current loop keeps playing while you prompt and generate. Each new input is applied at the next loop boundary. If no idea is ready, the music keeps looping until you send one.</p><p>Playback is silent until you upload music. This is an interface demo; it does not generate music.</p><button class="dialog-primary" id="dialog-done">Continue</button>`);$('#dialog-done').onclick=()=>$('#info-dialog').close();}
+  function timingDialog() {showDialog(`<span class="dialog-eyebrow">QUIET CURRENT</span><h2>One idea. Eight seconds.</h2><p>Send your first idea: generate for 4 seconds, then play the first 8-second section.</p><div class="timing-row"><span>01</span>Prompt the next idea<b>8 seconds</b></div><div class="timing-row"><span>02</span>Generate<b>8 seconds</b></div><div class="timing-row"><span>03</span>Play the next section<b>8 seconds</b></div><p>The previous section keeps looping during Prompt and Generate. The next section starts only when Play begins. Send early to queue an idea; an unsent draft submits at the end of Prompt. The timed sequence continues even if you leave the prompt blank.</p><p>Quiet Current contains eight sections: cello, then bass, viola, horns, violins, and flute. Sections 6–8 contain the full arrangement. After section 8, the full arrangement continues looping. Upload audio to use your own music instead.</p><p>This demo plays prepared previews of your MIDI; prompts do not change the notes.</p><button class="dialog-primary" id="dialog-done">Continue</button>`);$('#dialog-done').onclick=()=>$('#info-dialog').close();}
   function textDialog() {showDialog(`<span class="dialog-eyebrow">EVERY IDEA BELONGS HERE</span><h2>Put a feeling into words.</h2><label class="sr-only" for="idea-name">Idea name</label><input id="idea-name" class="dialog-input" placeholder="Name your idea" maxlength="100"><label class="sr-only" for="idea-body">Your idea</label><textarea id="idea-body" class="dialog-textarea" placeholder="A scene, a script, a feeling, a musical direction…"></textarea><button class="dialog-primary" id="save-idea">Add to my inputs</button>`);$('#save-idea').onclick=()=>{const text=$('#idea-body').value.trim();if(!text){$('#idea-body').focus();return;}const name=$('#idea-name').value.trim()||'A new direction';const input={id:crypto.randomUUID(),kind:'text',name:name.replace(/\.txt$/i,'')+'.txt',text};addInputRecord(input);attachInput(input.id,false);$('#info-dialog').close();$('#prompt-input').focus();};}
   function toast(message){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').hidden=false;toastTimer=setTimeout(()=>$('#toast').hidden=true,3800);}
   function setTheme(theme){document.documentElement.dataset.theme=theme;try{localStorage.setItem('taan-demo-theme',theme);}catch{}$('#theme-toggle').innerHTML=icon(theme==='dark'?'sun':'moon');$('#theme-toggle').title=theme==='dark'?'Switch to reference light palette':'Switch to Taan dark palette';$('#theme-toggle').setAttribute('aria-label',$('#theme-toggle').title);$('meta[name="theme-color"]').content=theme==='dark'?'#0e0b0a':'#faf8ef';}
-  function resetDemo(){loopStart=0;lastAudioLoop=-1;lastSecond=-1;audio.pause();audio.removeAttribute('src');audio.load();activeAudioId=null;audioUrl=null;urlCache.forEach(url=>URL.revokeObjectURL(url));urlCache.clear();inputs=emptyInputs();selectedId=null;chatOpen=false;document.body.classList.remove('chat-open');pending=[];messages=[];queued=null;phase='idle';paused=false;iteration=0;firstRound=true;waiting=false;currentMessage=null;$('#prompt-input').value='';$('#play-time').innerHTML='00:00 <span>/ 00:08</span>';document.body.classList.remove('paused');waveBars.forEach(b=>b.classList.remove('passed'));renderInputs();renderPending();renderMessages(false);updateUI();saveSoon();toast('A fresh composition. Start with anything.');}
-  function exportSession(){const data={format:'taan-composition-demo',version:1,title:$('#project-title').value,style,exportedAt:new Date().toISOString(),timing:{initialGenerationSeconds:4,promptSeconds:8,generationSeconds:8,playbackSeconds:8,continuousAudio:true,loopsPerInput:3},inputs:inputs.filter(i=>!i.placeholder).map(({file,...input})=>({...input,size:file?.size,mimeType:file?.type})),ideas:messages,draft:$('#prompt-input').value,note:'Interface prototype. Uploaded files are stored in the browser and are not embedded in this JSON export.'};const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=($('#project-title').value||'taan-composition').replace(/[^a-z0-9_-]/gi,'-').toLowerCase()+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Session exported. Your original media stays in this browser.');}
+  function resetDemo(){activeLoop=-1;audioSource='score';completedRounds=0;loopStart=0;lastAudioLoop=-1;lastSecond=-1;audio.pause();audio.removeAttribute('src');audio.load();activeAudioId=null;audioUrl=null;urlCache.forEach(url=>URL.revokeObjectURL(url));urlCache.clear();inputs=emptyInputs();selectedId=null;chatOpen=false;document.body.classList.remove('chat-open');pending=[];messages=[];queued=null;phase='idle';paused=false;iteration=0;firstRound=true;waiting=false;currentMessage=null;$('#prompt-input').value='';$('#play-time').innerHTML='00:00 <span>/ 00:08</span>';document.body.classList.remove('paused');waveBars.forEach(b=>b.classList.remove('passed'));renderInputs();renderPending();renderMessages(false);updateUI();saveSoon();toast('A fresh composition. Start with anything.');}
+  function exportSession(){const data={format:'taan-composition-demo',version:2,title:$('#project-title').value,style,exportedAt:new Date().toISOString(),timing:{initialGenerationSeconds:4,promptSeconds:8,generationSeconds:8,playbackSeconds:8,continuousAudio:true,phaseOrder:['prompt','generate','play'],scoreLoopSeconds:8,scoreLoopCount:8},soundtrack:{title:soundtrack.title,source:soundtrack.source,activeLoop:activeLoop+1,audioSource},inputs:inputs.filter(i=>!i.placeholder).map(({file,...input})=>({...input,size:file?.size,mimeType:file?.type})),ideas:messages,draft:$('#prompt-input').value,note:'Interface prototype. Uploaded files are stored in the browser and are not embedded in this JSON export.'};const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=($('#project-title').value||'taan-composition').replace(/[^a-z0-9_-]/gi,'-').toLowerCase()+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Session exported. Your original media stays in this browser.');}
   function saveSoon(){if(restoring)return;$('#save-status').textContent='Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(saveSession,350);}
-  function saveSession(){if(!db){$('#save-status').textContent='Saved for this session';return;}try{const tx=db.transaction('session','readwrite');tx.objectStore('session').put({inputs,selectedId,pending,messages,iteration,style,title:$('#project-title').value,draft:$('#prompt-input').value,activeAudioId,chatOpen},'current');tx.oncomplete=()=>$('#save-status').textContent='All changes saved';tx.onerror=()=>$('#save-status').textContent='Saved for this session';}catch{$('#save-status').textContent='Saved for this session';}}
-  async function restoreSession(){try{db=await new Promise((resolve,reject)=>{const req=indexedDB.open('taan-composition-clean-v3',1);req.onupgradeneeded=()=>req.result.createObjectStore('session');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});const saved=await new Promise((resolve,reject)=>{const req=db.transaction('session','readonly').objectStore('session').get('current');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});if(!saved)return;restoring=true;inputs=saved.inputs||inputs;selectedId=saved.selectedId||selectedId;pending=saved.pending||[];messages=(saved.messages||[]).map(m=>({...m,status:m.status==='done'?'done':'saved'}));iteration=saved.iteration||0;style=saved.style||style;$('#project-title').value=saved.title||'JC composition';$('#prompt-input').value=saved.draft||'';if(saved.chatOpen||messages.length||pending.length)openChat();$('#style-button').textContent=style.toUpperCase();document.title=$('#project-title').value+' — taan';const savedAudio=inputs.find(i=>i.id===saved.activeAudioId&&i.file);if(savedAudio){activeAudioId=savedAudio.id;audio.src=objectUrl(savedAudio);audio.loop=true;}renderInputs();renderPending();renderMessages(false);updateUI();restoring=false;}catch{$('#save-status').textContent='Saved for this session';}}
+  function saveSession(){if(!db){$('#save-status').textContent='Saved for this session';return;}try{const tx=db.transaction('session','readwrite');tx.objectStore('session').put({inputs,selectedId,pending,messages,iteration,style,title:$('#project-title').value,draft:$('#prompt-input').value,activeAudioId,activeLoop,audioSource,completedRounds,chatOpen},'current');tx.oncomplete=()=>$('#save-status').textContent='All changes saved';tx.onerror=()=>$('#save-status').textContent='Saved for this session';}catch{$('#save-status').textContent='Saved for this session';}}
+  async function restoreSession(){try{db=await new Promise((resolve,reject)=>{const req=indexedDB.open('taan-composition-midi-v4',1);req.onupgradeneeded=()=>req.result.createObjectStore('session');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});const saved=await new Promise((resolve,reject)=>{const req=db.transaction('session','readonly').objectStore('session').get('current');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});if(!saved)return;restoring=true;inputs=saved.inputs||inputs;selectedId=saved.selectedId||selectedId;pending=saved.pending||[];messages=(saved.messages||[]).map(m=>({...m,status:m.status==='done'?'done':'saved'}));iteration=saved.iteration||0;style=saved.style||style;$('#project-title').value=saved.title||'JC composition';$('#prompt-input').value=saved.draft||'';if(saved.chatOpen||messages.length||pending.length)openChat();$('#style-button').textContent=style.toUpperCase();document.title=$('#project-title').value+' — taan';completedRounds=saved.completedRounds||0;const savedAudio=inputs.find(i=>i.id===saved.activeAudioId&&i.file);if(saved.audioSource==='upload'&&savedAudio){audioSource='upload';activeAudioId=savedAudio.id;audio.src=objectUrl(savedAudio);audio.loop=true;}else if(Number.isInteger(saved.activeLoop)&&saved.activeLoop>=0){selectScoreLoop(Math.min(saved.activeLoop,soundtrack.loops.length-1));}renderInputs();renderPending();renderMessages(false);updateUI();restoring=false;}catch{$('#save-status').textContent='Saved for this session';}}
   // Decorative geometry is deterministic, so the layout has no loading dependency.
   $('#orb').innerHTML=Array.from({length:12},(_,i)=>`<ellipse cx="250" cy="250" rx="${165+i%3*4}" ry="${139+i%4*4}" transform="rotate(${i*15} 250 250)"/>`).join('')+Array.from({length:46},(_,i)=>{const angle=i*2.39996,r=187+(i%7)*7;return `<circle cx="${250+Math.cos(angle)*r}" cy="${250+Math.sin(angle)*r}" r="${i%3===0?1.1:.6}" fill="currentColor" stroke="none" opacity=".55"/>`;}).join('');
   $('#file-input').addEventListener('change',e=>addFiles([...e.target.files],e.target.dataset.kind));

@@ -40,7 +40,7 @@
 .player-header>div:first-child{display:flex;align-items:center;gap:6px}
 .player-header>div:first-child:before{content:"↻";font-size:15px;color:var(--muted)}
 .player-time{font-size:10px}
-#player-state{display:none}
+#player-state{display:inline;color:var(--muted)}
 .player-main{gap:13px}
 .play-button{width:34px;height:34px}
 .play-button:disabled{opacity:.35}
