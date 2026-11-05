@@ -126,5 +126,32 @@
         "06 Flute - Airy descant"
       ]
     }
+  ],
+  "playback": "continuous-layered-stems",
+  "stems": [
+    {
+      "file": "stem-01.wav",
+      "instrument": "01_Cello"
+    },
+    {
+      "file": "stem-02.wav",
+      "instrument": "02_Double_Bass"
+    },
+    {
+      "file": "stem-03.wav",
+      "instrument": "03_Viola"
+    },
+    {
+      "file": "stem-04.wav",
+      "instrument": "04_Soft_French_Horns"
+    },
+    {
+      "file": "stem-05.wav",
+      "instrument": "05_Legato_Violins"
+    },
+    {
+      "file": "stem-06.wav",
+      "instrument": "06_Flute"
+    }
   ]
 }
