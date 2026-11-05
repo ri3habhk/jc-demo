@@ -7,6 +7,7 @@
       this.context = null;
       this.nodes = [];
       this.upload = null;
+      this.uploadNodes = new Set();
       this.epoch = null;
       this.mode = 'score';
       this.muted = false;
@@ -51,22 +52,29 @@
       await resumed;
       return this.decoded;
     }
-    ramp(param, value, seconds = .85) {
+    ramp(param, value, seconds = .85, at = this.context.currentTime) {
       const now = this.context.currentTime;
-      if (param.cancelAndHoldAtTime) param.cancelAndHoldAtTime(now);
+      if (at > now) { param.cancelScheduledValues(at); param.setValueAtTime(param.value, at); }
+      else if (param.cancelAndHoldAtTime) param.cancelAndHoldAtTime(now);
       else { const current = param.value; param.cancelScheduledValues(now); param.setValueAtTime(current, now); }
-      param.linearRampToValueAtTime(value, now + seconds);
+      param.linearRampToValueAtTime(value, at + seconds);
     }
-    async playScore(layers) {
+    nextBoundary(notBefore = this.context.currentTime) {
+      const earliest = Math.max(notBefore, this.context.currentTime + .025);
+      if (this.epoch === null) return earliest;
+      const bars = Math.ceil((earliest - this.epoch) / this.manifest.loopSeconds - 1e-9);
+      return this.epoch + Math.max(0, bars) * this.manifest.loopSeconds;
+    }
+    async playScore(layers, notBefore) {
       const revision = this.revision;
       const buffers = await this.prepare();
       if (revision !== this.revision) return;
       const context = this.context;
+      const at = this.nextBoundary(notBefore);
       if (!this.nodes.length) {
         // All six sources start on exactly the same sample and keep running,
         // including muted layers. Later phases change only their gain.
-        const at = context.currentTime + .025;
-        this.epoch = at;
+        this.epoch ??= at;
         this.nodes = buffers.map((buffer, index) => {
           const source = context.createBufferSource(), gain = context.createGain();
           source.buffer = buffer;
@@ -81,17 +89,19 @@
           gain.gain.linearRampToValueAtTime(audible ? 1 : 0, at + .12);
           return {source, gain, audible};
         });
-      } else this.setLayers(layers);
+      } else this.setLayers(layers, at);
       this.mode = 'score';
-      this.ramp(this.scoreBus.gain, 1);
-      if (this.upload) this.ramp(this.upload.gain.gain, 0);
+      this.ramp(this.scoreBus.gain, 1, .85, at);
+      if (this.upload) this.ramp(this.upload.gain.gain, 0, .85, at);
+      return at;
     }
-    setLayers(layers) {
+    setLayers(layers, at) {
       this.nodes.forEach((node, index) => {
         const audible = index < layers;
         if (node.audible === audible) return;
         node.audible = audible;
-        this.ramp(node.gain.gain, audible ? 1 : 0);
+        // Hold every new instrument at zero until the exact musical boundary.
+        this.ramp(node.gain.gain, audible ? 1 : 0, .85, at);
       });
     }
     async prepareUpload(file) {
@@ -122,25 +132,30 @@
       }
       return result;
     }
-    async playUpload(file) {
+    async playUpload(file, notBefore) {
       const revision = this.revision;
       const context = this.ensureContext();
       await context.resume();
+      const buffer = await this.prepareUpload(file);
+      if (revision !== this.revision) return;
+      const at = this.nextBoundary(notBefore);
       if (this.upload?.file !== file) {
-        const buffer = await this.prepareUpload(file);
-        if (revision !== this.revision) return;
         const old = this.upload;
         const source = context.createBufferSource(), gain = context.createGain();
         source.buffer = buffer; source.loop = true; gain.gain.value = 0;
         source.connect(gain).connect(this.master);
-        source.start(context.currentTime + .025);
-        this.epoch ??= context.currentTime + .025;
+        source.start(at);
+        this.epoch ??= at;
         this.upload = {file, source, gain};
-        if (old) { this.ramp(old.gain.gain, 0); old.source.stop(context.currentTime + .9); }
+        const node = this.upload;
+        this.uploadNodes.add(node);
+        source.onended = () => { source.disconnect(); gain.disconnect(); this.uploadNodes.delete(node); };
+        if (old) { this.ramp(old.gain.gain, 0, .85, at); old.source.stop(at + .9); }
       }
       this.mode = 'upload';
-      this.ramp(this.scoreBus.gain, 0);
-      this.ramp(this.upload.gain.gain, 1);
+      this.ramp(this.scoreBus.gain, 0, .85, at);
+      this.ramp(this.upload.gain.gain, 1, .85, at);
+      return at;
     }
     setMuted(value) {
       this.muted = value;
@@ -149,11 +164,13 @@
     pause() { return this.context?.suspend(); }
     resume() { return this.context?.resume(); }
     get playing() { return this.epoch !== null && this.context?.state === 'running'; }
+    get time() { return this.context?.currentTime ?? 0; }
     get position() { return this.epoch === null ? 0 : Math.max(0, this.context.currentTime - this.epoch) % this.manifest.loopSeconds; }
     reset() {
       this.revision++;
       for (const {source, gain} of this.nodes) { source.stop(); source.disconnect(); gain.disconnect(); }
-      if (this.upload) { this.upload.source.stop(); this.upload.source.disconnect(); this.upload.gain.disconnect(); }
+      for (const node of this.uploadNodes) { node.source.stop(); node.source.disconnect(); node.gain.disconnect(); }
+      this.uploadNodes.clear();
       this.nodes = []; this.upload = null; this.epoch = null; this.mode = 'score';
       this.pause();
     }
