@@ -4,9 +4,10 @@ Each MIDI retains all six instrument tracks, tempo, meter, key, program changes,
 
 The six stem-NN.wav files are synchronized instrument layers, with release and room tails wrapped across their boundaries. Matching boundary cello notes are tied. The website starts all stems once and fades in new layers without restarting existing instruments. The loop-NN.wav files are cumulative mixes of those stems. All files are exactly eight seconds; there is no fade to silence at the bar line.
 
-Prompt 1: generate 4s, play loop 1 for 8s.
+Reference audio: wait 3s, listen muted for 8s, generate muted for 8s, then play for 8s.
+Typed first prompt: generate 8s, play loop 1 for 8s.
 Prompt 2 onward: prompt 8s, generate 8s, play the next loop 8s.
-The previous loop continues during Prompt and Generate.
+The previous loop continues during Prompt and Generate. New layers remain silent until the next eight-second bar begins; the visible layer count changes at that same boundary.
 After loop 8, keep looping the full arrangement.
 
 01 | 00–08s | Cello
