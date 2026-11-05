@@ -16,7 +16,7 @@ Visit http://127.0.0.1:5173. No build, package installation, API key or backend 
 
 The initial prompt has no typing deadline. Choose Text to write directly in the prompt bar; no import dialog opens. Enter (or the send button) starts 8 seconds of generation. The next layer then begins on the next 8-second musical boundary and plays for a complete 8 seconds. If generation finishes mid-bar, the existing layers continue while the player shows “Next bar”. Shift+Enter adds a new line. Drafts wait for an explicit send. The timed music cycle continues without adding messages if the 8-second prompt window ends before you send. During an active generation or the reference intro, a new submission queues for the next round.
 
-Click the Reference audio card to run the intro. It does not open a file picker or add anything to the chat.
+Click the Reference audio card to run the intro. It does not open a file picker. This explicit input adds a Reference audio chip and the approved cello reasoning to the chat without submitting a draft.
 
 | Time after click | Behaviour |
 | --- | --- |
@@ -69,7 +69,7 @@ The energy player and prompt box share the same width and 108-pixel height. Thei
 - Drop a file directly onto a card to use that category, or onto the panel, center or composer for automatic classification. The plus menu also supports combined inputs.
 - MIDI, image, video and script uploads appear immediately as removable thumbnails inside the prompt box, before you type or send. Images show their actual image, videos show a frame, MIDI shows a note preview, and plain-text scripts show a miniature page. Unsupported previews retain a file-type tile. Multiple attachments scroll horizontally on small screens.
 - Each card fills with colour as soon as it receives a file. Its visual check box remains empty, including after generation.
-- Refresh starts a completely new composition: empty input cards, chat and prompt bar, no attachments, and no playback progress. Previous uploads, messages and drafts are not restored. Messages appear only after you press Enter or Send. It accepts typed prompts and attachments. There are no seeded prompts or canned assistant replies; authored replies can be added later through the message reply field. A submitted Text prompt colours the Text card, while leaving its check box empty. Ordinary chat prompts outside Text mode do not fill an input card.
+- Refresh starts a completely new composition: empty input cards, chat and prompt bar, no attachments, and no playback progress. Previous uploads, messages and drafts are not restored. Messages appear only after you press Enter or Send, or explicitly start Reference audio. It accepts typed prompts and attachments. The six approved launch-script replies appear immediately beneath submitted inputs, including attachment-only image submissions and queued ideas. Input categories select the reply; matching command words support typed or dictated launch prompts. Unmatched ordinary chat receives no invented reply. Uploading, typing, and automatic cycles alone add no messages. A submitted Text prompt colours the Text card, while leaving its check box empty. Ordinary chat prompts outside Text mode do not fill an input card.
 - Rename the composition in the header; switch between the dark live-app styling and light reference palette.
 - Export downloads session metadata and prompt history as JSON; original media is not embedded.
 - The three-dot menu starts a fresh composition or explains the timing.
@@ -77,3 +77,7 @@ The energy player and prompt box share the same width and 108-pixel height. Thei
 - Optional microphone dictation uses the browser's speech-recognition service after activation.
 
 Files can be up to 250 MB each. Supported media formats depend on the browser. MP3 and WAV work well for audio.
+
+## Launch-script reasoning
+
+The replies are authored demo copy. They describe the approved cello, four-note bass, angel/devil image, MIDI horns, video violins, and script-ending directions. The current prepared soundtrack still uses viola at the image step and flute without percussion at the ending; adding the replies does not alter audio assets or timing.

@@ -72,7 +72,8 @@ body.audio-running .playhead,body.paused.has-composition .playhead{display:block
 .message-meta{font-size:8px}
 .user-message{font-size:14px;line-height:1.6;margin-left:28px;padding:15px 17px}
 .user-message>div:first-child .message-attachment{margin-top:0}
-.assistant-message{font-size:12px;align-items:center;gap:5px;margin-top:16px;line-height:1.5}
+.assistant-message{font-size:12px;align-items:flex-start;gap:9px;margin-top:16px;line-height:1.5}
+.assistant-message>div{min-width:0;white-space:pre-line;overflow-wrap:anywhere}
 .generating-message{color:var(--muted)}
 .generating-message .message-brand-mark{animation:breathe 1.2s ease-in-out infinite}
 .then-divider{margin:26px 0;font-size:8px}

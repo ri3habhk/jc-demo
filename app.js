@@ -7,6 +7,15 @@
   const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const kinds = ['audio','midi','video','image','text','script'];
   const labels = {audio:'Reference audio',midi:'MIDI',video:'Video',image:'Image',text:'Text',script:'Script',file:'File'};
+  // Authored launch-demo copy, not analysis of the uploaded files.
+  const launchReasoning = {
+    audio:'I’ll preserve your melody’s shape and rhythm, giving it a warm, expressive cello voice.',
+    text:'B1 → F♯2 → G1 → D2. Four slow double-bass notes will support the cello while keeping its melody unchanged.',
+    image:'The angel suggests delicate harp; the devil suggests a darker bass presence. I’ll bring that contrast into the arrangement.',
+    midi:'I’ll follow the MIDI progression with soft, sustained French horns, adding harmonic warmth around the existing melody.',
+    video:'The flowing movement suggests a gentle upper violin line. Smooth, connected notes will carry that motion above the existing layers.',
+    script:'An airy melody suggests flute; footsteps suggest light percussion. I’ll open the ending into a spacious, hopeful texture.'
+  };
   const emptyInputs = () => ['audio','text','image','midi','video','script'].map(kind=>({id:'slot-'+kind,kind,placeholder:true,name:{audio:'Click to begin',text:'Write a direction',image:'Add an image',midi:'Add a MIDI file',video:'Add a video',script:'Add a script'}[kind]}));
   let inputs = emptyInputs(), selectedId = null, pending = [], messages = [], queued = null;
   let chatOpen=true, textEntry=false;
@@ -126,7 +135,11 @@
   function startReferenceDemo() {
     if(phase!=='idle')return;
     engine.reset();
-    referenceIntro=true;iteration=0;completedRounds=0;currentMessage=null;firstRound=true;
+    referenceIntro=true;iteration=0;completedRounds=0;firstRound=true;
+    // Clicking Reference audio explicitly supplies the first input. Do not
+    // fabricate a typed command or submit any draft already in the editor.
+    currentMessage={id:crypto.randomUUID(),text:'',attachments:[],referenceStart:true,status:'listening',reply:launchReasoning.audio};
+    messages.push(currentMessage);openChat();renderMessages();
     selectScoreLoop(0);
     // Unlock the audio context in the gesture, but create no audio sources
     // during the 3s wait, 8s listening pass, or 8s generation pass.
@@ -233,8 +246,24 @@
     });
   }
   function renderMessages(scroll = true) {
-    $('#chat-messages').innerHTML=messages.map((m,index)=>`${index?'<div class="then-divider">THEN</div>':''}<div class="message-group" data-message="${m.id}"><div class="message-meta">YOU</div><div class="user-message">${escape(m.text)}${m.attachments.map(id=>inputs.find(i=>i.id===id)).filter(Boolean).map(i=>`<div><span class="message-attachment">${icon(i.kind==='file'?'script':i.kind)}<span>${escape(i.name)}</span></span></div>`).join('')}</div>${m.reply?`<div class="assistant-message"><img class="message-brand-mark" src="assets/taan-mark.svg" alt=""><div>${escape(m.reply)}</div></div>`:''}</div>`).join('');
+    $('#chat-messages').innerHTML=messages.map((m,index)=>`${index?'<div class="then-divider">THEN</div>':''}<div class="message-group" data-message="${m.id}"><div class="message-meta">YOU</div><div class="user-message">${m.referenceStart?`<span class="message-attachment">${icon('audio')}<span>Reference audio</span></span>`:escape(m.text)}${m.attachments.map(id=>inputs.find(i=>i.id===id)).filter(Boolean).map(i=>`<div><span class="message-attachment">${icon(i.kind==='file'?'script':i.kind)}<span>${escape(i.name)}</span></span></div>`).join('')}</div>${m.reply?`<div class="assistant-message"><img class="message-brand-mark" src="assets/taan-mark.svg" alt=""><div>${escape(m.reply)}</div></div>`:''}</div>`).join('');
     if(scroll)$('#chat-messages').scrollTop=$('#chat-messages').scrollHeight;
+  }
+  function reasoningForIdea(message) {
+    const attachedKinds=message.attachments.map(id=>inputs.find(input=>input.id===id)?.kind).filter(kind=>launchReasoning[kind]);
+    const mediaKinds=[...new Set(attachedKinds.filter(kind=>kind!=='text'))];
+    if(mediaKinds.length)return mediaKinds.map(kind=>launchReasoning[kind]).join('\n\n');
+    const text=message.text.toLowerCase();
+    const cues=[
+      ['script',/\b(script|ending|flute|footsteps)\b/],
+      ['video',/\b(video|clip|violin|violins)\b/],
+      ['midi',/\b(midi|progression|horn|horns)\b/],
+      ['image',/\b(image|picture|angel|devil|harp)\b/],
+      ['text',/\b(bass|b1|g1|d2)\b|\b(four|4)\s+(slow\s+)?notes\b/],
+      ['audio',/\b(hum|humming|hummed|cello)\b|make this a melody/]
+    ];
+    const kind=cues.find(([,pattern])=>pattern.test(text))?.[0];
+    return launchReasoning[kind]||((message.textInputId||attachedKinds.includes('text'))?launchReasoning.text:'');
   }
   function captureDraft() {
     const text=$('#prompt-input').value.trim();if(!text&&!pending.length)return null;
@@ -246,6 +275,7 @@
       Object.assign(input,{text,name:text.length>52?text.slice(0,51)+'…':text});
       selectedId=input.id;m.textInputId=input.id;
     }
+    m.reply=reasoningForIdea(m);
     messages.push(m);pending=[];$('#prompt-input').value='';renderPending();renderInputs();renderMessages();saveSoon();return m;
   }
   function submitIdea(e) {
@@ -317,7 +347,7 @@
     if(phase==='listening'){
       const reference=inputs.find(input=>input.kind==='audio');
       if(reference?.placeholder)Object.assign(reference,{placeholder:false,demoReference:true,name:'Quiet Current reference'});
-      beginGeneration(null,true);return;
+      beginGeneration(currentMessage,true);return;
     }
     if(phase==='generating'){queuePlayback();setPhase('ready',0);return;}
     if(phase==='playing'){firstRound=false;setPhase('prompting',durations.prompting,phaseAudioStart+phaseDuration/1000);return;}
@@ -422,7 +452,7 @@
   }
   function updateAudioIcon(){const button=$('#mute-button');button.disabled=referenceIntro;button.innerHTML=icon(referenceIntro||!activeAudioId||muted?'muted':'volume');button.title=referenceIntro?'Muted during the reference intro':activeAudioId?(muted?'Unmute music':'Mute music'):'Upload your own music';button.setAttribute('aria-label',button.title);}
   function showDialog(content) {$('#dialog-content').innerHTML=content;$('#info-dialog').showModal();}
-  function timingDialog() {showDialog(`<span class="dialog-eyebrow">QUIET CURRENT</span><h2>One idea. Eight seconds.</h2><p>Click Reference audio to begin, with no import window. Wait 3 seconds, then watch an 8-second muted listening pass and an 8-second muted generation pass. The music then starts from the beginning for 8 seconds.</p><div class="timing-row"><span>01</span>Prompt the next idea<b>8 seconds</b></div><div class="timing-row"><span>02</span>Generate<b>8 seconds</b></div><div class="timing-row"><span>03</span>Play the next section<b>8 seconds</b></div><p>The music continues through Prompt and Generate. The next instrument stays silent until a new 8-second musical bar begins. Its sound and the visible layer count change together at that boundary. If generation finishes mid-bar, the player shows Next bar while the current music continues. Choose Text to type in the prompt bar. Enter starts 8 seconds of generation immediately, then a complete 8-second playback on the next musical bar; Shift+Enter adds a new line. Drafts stay in the prompt bar until you press Enter or Send. Sending during generation queues your idea for the next round. The timed sequence continues even if you leave the prompt blank.</p><p>Quiet Current contains eight sections: cello, then bass, viola, horns, violins, and flute. Sections 6–8 contain the full arrangement. After section 8, the full arrangement continues looping. Upload audio to use your own music instead. References play through without jumping back every eight seconds.</p><p>Six synchronized instrument tracks keep running continuously. New instruments fade in without restarting existing notes. Prompts do not change the prepared notes; chat replies are left blank for your supplied script.</p><button class="dialog-primary" id="dialog-done">Continue</button>`);$('#dialog-done').onclick=()=>$('#info-dialog').close();}
+  function timingDialog() {showDialog(`<span class="dialog-eyebrow">QUIET CURRENT</span><h2>One idea. Eight seconds.</h2><p>Click Reference audio to begin, with no import window. Wait 3 seconds, then watch an 8-second muted listening pass and an 8-second muted generation pass. The music then starts from the beginning for 8 seconds.</p><div class="timing-row"><span>01</span>Prompt the next idea<b>8 seconds</b></div><div class="timing-row"><span>02</span>Generate<b>8 seconds</b></div><div class="timing-row"><span>03</span>Play the next section<b>8 seconds</b></div><p>The music continues through Prompt and Generate. The next instrument stays silent until a new 8-second musical bar begins. Its sound and the visible layer count change together at that boundary. If generation finishes mid-bar, the player shows Next bar while the current music continues. Choose Text to type in the prompt bar. Enter starts 8 seconds of generation immediately, then a complete 8-second playback on the next musical bar; Shift+Enter adds a new line. Drafts stay in the prompt bar until you press Enter or Send. Sending during generation queues your idea for the next round. The timed sequence continues even if you leave the prompt blank.</p><p>Quiet Current contains eight sections: cello, then bass, viola, horns, violins, and flute. Sections 6–8 contain the full arrangement. After section 8, the full arrangement continues looping. Upload audio to use your own music instead. References play through without jumping back every eight seconds.</p><p>Six synchronized instrument tracks keep running continuously. New instruments fade in without restarting existing notes. Prompts do not change the prepared notes. The approved launch-script reasoning appears when you submit an idea or click Reference audio. Unsent drafts and automatic cycles add no chat replies.</p><button class="dialog-primary" id="dialog-done">Continue</button>`);$('#dialog-done').onclick=()=>$('#info-dialog').close();}
   function toast(message){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').hidden=false;toastTimer=setTimeout(()=>$('#toast').hidden=true,3800);}
   function setTheme(theme){document.documentElement.dataset.theme=theme;try{localStorage.setItem('taan-demo-theme',theme);}catch{}$('#theme-toggle').innerHTML=icon(theme==='dark'?'sun':'moon');$('#theme-toggle').title=theme==='dark'?'Switch to reference light palette':'Switch to Taan dark palette';$('#theme-toggle').setAttribute('aria-label',$('#theme-toggle').title);$('meta[name="theme-color"]').content=theme==='dark'?'#0e0b0a':'#faf8ef';}
   function resetDemo(){pendingPlayback=null;phaseAudioStart=null;textEntry=false;referenceIntro=false;activeLoop=-1;audioSource='score';completedRounds=0;loopStart=0;lastAudioLoop=-1;lastSecond=-1;engine.reset();activeUpload=null;activeAudioId=null;urlCache.forEach(url=>URL.revokeObjectURL(url));urlCache.clear();inputs=emptyInputs();selectedId=null;openChat();pending=[];messages=[];queued=null;phase='idle';paused=false;iteration=0;firstRound=true;waiting=false;currentMessage=null;$('#prompt-input').value='';$('#play-time').innerHTML='00:00 <span>/ 00:08</span>';document.body.classList.remove('paused');waveBars.forEach(b=>b.classList.remove('passed'));renderInputs();renderPending();renderMessages(false);updateUI();clearTimeout(saveTimer);saveSession();toast('A fresh composition. Start with anything.');}
