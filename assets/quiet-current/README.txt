@@ -18,3 +18,5 @@ After loop 8, keep looping the full arrangement.
 06 | 40–48s | Full arrangement · flute
 07 | 48–56s | Full arrangement
 08 | 56–64s | Full arrangement
+
+Four-note bass revision: B1, F#2, G1, D2 at offsets 0, 2, 4 and 6 seconds. The rendered bass stem, cumulative WAVs and loop MIDIs use this revision. Taan_Quiet_Current_Build_64s_FourNoteBass.mid is the revised short build; Taan_Quiet_Current_Build_64s.mid preserves the original source.

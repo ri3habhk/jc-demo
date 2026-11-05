@@ -1,6 +1,6 @@
 {
   "title": "Quiet Current",
-  "source": "Taan_Quiet_Current_Build_64s.mid",
+  "source": "Taan_Quiet_Current_Build_64s_FourNoteBass.mid",
   "bpm": 60,
   "loopSeconds": 8,
   "loopCount": 8,
@@ -153,5 +153,12 @@
       "file": "stem-06.wav",
       "instrument": "06_Flute"
     }
+  ],
+  "revision": "four-note-bass-v11",
+  "bassPattern": [
+    "B1",
+    "F#2",
+    "G1",
+    "D2"
   ]
 }
