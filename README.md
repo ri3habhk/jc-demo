@@ -4,7 +4,7 @@ A local Taan composition UI prototype with a clean opening, an empty chat, nativ
 
 ## Run
 
-Open `index.html` directly, or serve this folder:
+Serve this folder locally (the audio engine loads the instrument files over HTTP):
 
 ```sh
 python3 -m http.server 5173 --bind 127.0.0.1
@@ -23,7 +23,7 @@ Send the first idea to start. The initial prompt has no typing deadline.
 | 3 | 8 seconds | 8 seconds | Section 3 for 8 seconds |
 | Following rounds | 8 seconds | 8 seconds | Next section for 8 seconds |
 
-The previous section keeps looping throughout Prompt and Generate. A new section starts only when its Play phase begins. Each round from Prompt 2 takes 24 seconds. Send early to queue an idea; an unsent nonempty draft submits automatically at the end of Prompt. The timed sequence continues if the prompt is blank, without inventing chat messages.
+All six instrument tracks start on the same audio clock and run continuously. Muted layers fade in over 850 milliseconds as their Play phase begins. Existing instruments are never stopped, reloaded, or rewound at a phase boundary. Music continues throughout Prompt and Generate. Each round from Prompt 2 takes 24 seconds. Send early to queue an idea; an unsent nonempty draft submits automatically at the end of Prompt. The timed sequence continues if the prompt is blank, without inventing chat messages.
 
 Pause freezes the phase clock, waveform and audio together. Resume continues from that point. The first eight rounds take 180 seconds, excluding initial typing and pauses. After section 8, the complete arrangement keeps looping in the same 8 / 8 / 8 cycle.
 
@@ -42,18 +42,20 @@ Pause freezes the phase clock, waveform and audio together. Resume continues fro
 | 7 | 48–56s | Full arrangement |
 | 8 | 56–64s | Full arrangement |
 
-The browser plays prepared WAV previews from the original MIDI render. Every WAV is exactly eight seconds with a short edge fade to avoid clicks. The prototype does not synthesize arbitrary MIDI or alter notes in response to prompts.
+The browser plays six synchronized instrument stems prepared from the original MIDI parts. Release and reverb tails wrap into the next musical bar; matching cello notes are tied over the phrase boundary. The loop boundary has no whole-mix fade or gap. The eight cumulative WAV previews are also rebuilt from these stems. The prototype does not synthesize arbitrary MIDI or alter notes in response to prompts.
 
-Upload reference audio to replace the prepared soundtrack when that idea finishes generation. Uploaded audio repeats from the beginning every eight seconds; shorter audio loops within the window. Other uploaded files serve as visual or textual references.
+Upload reference audio to replace the prepared soundtrack when that idea finishes generation. Uploaded audio plays through its full length, with a short overlapping blend at its own loop seam. It is never rewound at an eight-second UI boundary. Other uploaded files serve as visual or textual references.
 
 ## Inputs and controls
 
-- Click Audio, Image, MIDI, Video or Script to open the native file picker; click Text to write a direction.
-- Drop files onto the left panel, center or composer. The plus menu also supports combined inputs.
+- All six input cards, including Text, open an unrestricted native file picker. Any file can be placed in any category. The selected category stays on the left; actual file type controls preview and audio decoding.
+- Drop a file directly onto a card to use that category, or onto the panel, center or composer for automatic classification. The plus menu also supports combined inputs.
+- Each card fills with colour as soon as it receives a file. Its visual check box remains empty, including after generation.
+- The chat is visible and empty on a fresh session. It accepts typed prompts and attachments. There are no seeded prompts or canned assistant replies; authored replies can be added later through the message reply field. Plain chat prompts do not fill an input card.
 - Rename the composition in the header; switch between the dark live-app styling and light reference palette.
 - Export downloads session metadata and prompt history as JSON; original media is not embedded.
 - The three-dot menu starts a fresh composition or explains the timing.
-- User files and drafts stay in this browser's IndexedDB. Version 4 starts fresh without importing earlier prototype sessions.
+- User files and drafts stay in this browser's IndexedDB. Version 5 starts fresh without importing earlier prototype sessions.
 - Optional microphone dictation uses the browser's speech-recognition service after activation.
 
 Files can be up to 250 MB each. Supported media formats depend on the browser. MP3 and WAV work well for audio.

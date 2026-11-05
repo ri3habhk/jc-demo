@@ -18,8 +18,10 @@
 .input-card.empty-input{cursor:pointer}
 .empty-input .grip{display:none}
 .empty-input .input-visual{opacity:.27}
-.input-card.applied-input{background:#f2683a12!important;border-color:#f2683a30!important}
-[data-theme=light] .input-card.applied-input{background:#e9eedb!important;border-color:#cad4b7!important}
+.input-card.filled-input{background:#f2683a22!important;border-color:#f2683a68!important}
+[data-theme=light] .input-card.filled-input{background:#e9eedb!important;border-color:#a8bc84!important}
+.input-check-empty{width:11px;height:11px;border:1px solid var(--line-strong);border-radius:2px;margin-left:auto;flex-shrink:0;opacity:.65}
+.filled-input .input-check-empty{border-color:var(--accent)}
 .orb-wrap{top:45%;width:420px;height:420px;transition:opacity .25s;pointer-events:none}
 .orb-mark{position:absolute;width:135px;height:90px;object-fit:contain;left:50%;top:50%;transform:translate(-50%,-50%);opacity:.62;filter:sepia(.5)}
 .orb-glow{opacity:.35}
