@@ -1,0 +1,88 @@
+/* The supplied video is the layout reference. The live site supplies the visual system. */
+.workspace{grid-template-columns:244px minmax(0,1fr)}
+.chat-panel{display:none}
+.chat-open .workspace{grid-template-columns:244px minmax(360px,1fr) minmax(340px,32%)}
+.chat-open .chat-panel{display:flex;animation:chat-reveal .25s ease-out}
+.chat-open #open-chat{display:none}
+.composition-panel{padding-bottom:42px}
+.composition-heading{padding:0 5px}
+.composition-heading p{font-size:11px;color:var(--muted)}
+.composition-stage{min-height:280px}
+.panel-description,.count,.stage-label,.stage-bottom,.cycle-strip,.style-badge,.player-labels,.version,.phase-notice,.composer-note,.write-input,.input-actions>p{display:none!important}
+.panel-heading{margin-bottom:22px}
+.panel-heading h2{font-size:17px}
+.input-list{flex:0 1 auto}
+.input-card{min-height:89px}
+.input-actions{margin-top:12px;padding-top:0}
+.add-input{min-height:34px;font-size:11px!important}
+.input-card.empty-input{cursor:pointer}
+.empty-input .grip{display:none}
+.empty-input .input-visual{opacity:.27}
+.input-card.applied-input{background:#f2683a12!important;border-color:#f2683a30!important}
+[data-theme=light] .input-card.applied-input{background:#e9eedb!important;border-color:#cad4b7!important}
+.orb-wrap{top:45%;width:420px;height:420px;transition:opacity .25s;pointer-events:none}
+.orb-mark{position:absolute;width:135px;height:90px;object-fit:contain;left:50%;top:50%;transform:translate(-50%,-50%);opacity:.62;filter:sepia(.5)}
+.orb-glow{opacity:.35}
+[data-theme=dark] .orb{color:#a99470;opacity:.55;stroke-width:.6}
+[data-theme=light] .orb-mark{filter:invert(.45) sepia(.35)}
+.has-preview .orb-wrap{opacity:0}
+.preview-card{left:50%!important;top:45%!important;bottom:auto!important;transform:translate(-50%,-50%);width:min(370px,78%);padding:10px;border-radius:12px;min-height:0}
+.preview-card:hover{transform:translate(-50%,-50%)}
+.preview-image{height:210px;width:100%;object-fit:contain;background:#0e0a09}
+.preview-content{height:180px;padding:25px;background:transparent}
+.preview-footer{height:34px}
+.preview-badge{display:none}
+.preview-text{text-align:left;font-size:18px;line-height:1.7;-webkit-line-clamp:5}
+.midi-preview{position:relative;width:100%;height:110px;background:repeating-linear-gradient(to bottom,transparent 0 16px,var(--line-strong) 16px 17px)}
+.midi-preview i{position:absolute;height:7px;border-radius:1px;background:var(--amber);opacity:.8}
+.player{align-self:center;width:min(100%,880px);padding:14px 20px 15px;border-radius:10px}
+.player-header{font-size:11px;margin-bottom:10px;color:var(--muted)}
+.player-header>div:first-child{display:flex;align-items:center;gap:6px}
+.player-header>div:first-child:before{content:"↻";font-size:15px;color:var(--muted)}
+.player-time{font-size:10px}
+#player-state{display:none}
+.player-main{gap:13px}
+.play-button{width:34px;height:34px}
+.play-button:disabled{opacity:.35}
+.player .waveform{height:34px;border:0;background:none;padding:0}
+.wave-bar{max-width:2px}
+body:not(.has-composition) .wave-bar{visibility:hidden}
+body:not(.has-composition) .playhead{display:none!important}
+.empty-wave-line{position:absolute;left:0;right:0;top:50%;height:1px;background:var(--line-strong)}
+.has-composition .empty-wave-line{display:none}
+.loop-count{font:9px var(--ui-mono);color:var(--muted);white-space:nowrap}
+.loop-count:empty{display:none}
+body.audio-running .wave-bar{animation:energy var(--speed) ease-in-out infinite alternate;animation-delay:var(--delay)}
+body.audio-running .playhead,body.paused.has-composition .playhead{display:block}
+.mute-button svg{height:14px;width:14px}
+.chat-header{padding-bottom:22px}
+.chat-header h2{font-size:17px!important;gap:8px}
+.chat-brand-mark{width:29px;height:25px;object-fit:contain;opacity:.65}
+.message-brand-mark{width:24px;height:20px;object-fit:contain;flex-shrink:0;opacity:.6;margin-top:1px}
+[data-theme=light] .chat-brand-mark,[data-theme=light] .message-brand-mark{filter:invert(.6) sepia(.3)}
+.chat-messages{padding-top:24px}
+.message-group{margin-bottom:24px}
+.message-meta{font-size:8px}
+.user-message{font-size:14px;line-height:1.6;margin-left:28px;padding:15px 17px}
+.user-message>div:first-child .message-attachment{margin-top:0}
+.assistant-message{font-size:12px;align-items:center;gap:5px;margin-top:16px;line-height:1.5}
+.generating-message{color:var(--muted)}
+.generating-message .message-brand-mark{animation:breathe 1.2s ease-in-out infinite}
+.then-divider{margin:26px 0;font-size:8px}
+.composer-wrap{padding-top:12px}
+.composer{min-height:155px}
+.composer-label{margin-bottom:12px;font-size:8px!important;letter-spacing:1px}
+.composer textarea{font-size:13px!important;min-height:60px}
+.composer-tools{gap:6px}
+#composer-hint{font-size:9px}
+.send-button{width:31px;height:31px}
+.send-button svg{width:17px;height:17px}
+.pending-attachments{max-height:75px;overflow:auto}
+#open-chat{color:var(--muted)}
+#open-chat:hover{color:var(--ink)}
+@keyframes chat-reveal{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
+@media(min-width:1700px){.workspace{grid-template-columns:310px minmax(0,1fr)}.chat-open .workspace{grid-template-columns:310px minmax(500px,1fr) 32.5%}.composition-panel{padding-bottom:58px}.orb-wrap{width:500px;height:500px}.orb-mark{width:155px;height:104px}.panel-heading h2{font-size:21px}.panel-heading{margin-bottom:26px}.composition-heading p{font-size:13px}.input-card{min-height:109px}.player{padding:17px 23px 18px}.player-header{font-size:13px}.player .waveform{height:42px}.play-button{width:40px;height:40px}.chat-header h2{font-size:21px!important}.user-message{font-size:16px;padding:18px 20px}.assistant-message{font-size:14px}.composer{min-height:170px}.composer textarea{font-size:15px!important}.composer-label{font-size:9px!important}.chat-brand-mark{width:34px;height:29px}.player-time{font-size:12px}.loop-count{font-size:11px}.preview-card{width:400px}.preview-image{height:240px}.preview-content{height:220px}.preview-text{font-size:20px}}
+@media(max-width:1250px){.workspace{grid-template-columns:208px minmax(0,1fr)}.chat-open .workspace{grid-template-columns:208px minmax(340px,1fr) 340px}.orb-wrap{width:350px;height:350px}.preview-card{width:280px}.preview-image{height:175px}.preview-content{height:155px}.preview-text{font-size:16px}.player{padding:13px 14px}.composition-panel{padding-bottom:30px}.user-message{font-size:13px}.chat-header h2{font-size:17px!important}}
+@media(max-height:800px) and (min-width:1001px){.composition-panel{padding-bottom:25px}.orb-wrap{width:330px;height:330px}.orb-mark{width:115px;height:78px}.preview-card{width:265px}.preview-image{height:155px}.preview-content{height:145px}.composer{min-height:140px}.input-card{min-height:78px}}
+@media(max-width:1000px){.workspace,.chat-open .workspace{grid-template-columns:190px minmax(0,1fr)}.inputs-panel{grid-row:1 / 3;min-height:calc(100dvh - 70px)}.composition-panel{min-height:calc(100dvh - 70px)}.chat-panel{min-height:470px}.chat-messages:empty{min-height:150px}.chat-open .chat-panel{grid-column:2}.orb-wrap{width:380px;height:380px}.input-list{max-height:720px}.player{margin-top:15px}}
+@media(max-width:620px){.workspace,.chat-open .workspace{display:flex;flex-direction:column}.inputs-panel{min-height:0;padding:19px 17px 13px}.panel-heading{margin-bottom:14px}.panel-heading h2{font-size:17px}.input-card{min-height:85px}.input-list{max-height:none}.input-card-title{font-size:11px}.input-actions{margin-top:6px}.add-input{width:100%;min-height:31px;background:transparent!important}.composition-panel{min-height:540px;padding:23px 17px 24px}.composition-heading h1{font-size:23px!important}.composition-heading p{font-size:10px}.composition-stage{min-height:320px}.orb-wrap{width:330px;height:330px;top:45%}.orb-mark{width:112px;height:76px}.player{padding:13px;margin-top:0}.preview-card{width:260px}.preview-image{height:160px}.preview-content{height:150px}.player .waveform{height:30px}.play-button{height:31px;width:31px}.player-main{gap:9px}.loop-count{font-size:8px}.chat-panel{min-height:440px;padding-top:23px}.chat-header h2{font-size:19px!important}.composer{min-height:155px}.composer textarea{font-size:14px!important}.chat-brand-mark{width:30px;height:25px}.chat-messages:empty{min-height:130px}}

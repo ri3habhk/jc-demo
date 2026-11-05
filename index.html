@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#0e0b0a"><title>JC composition — taan</title><link rel="icon" href="assets/taan-mark.svg"><link rel="stylesheet" href="fonts.css"><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="live-theme.css"><link rel="stylesheet" href="clean.css"><script defer src="app.js"></script></head>
+<body>
+<div class="app-backdrop" aria-hidden="true"><span class="backdrop-flowers"></span><span class="backdrop-veil"></span></div>
+<svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="M12 1v22M1 12h22M4.2 4.2l15.6 15.6M4.2 19.8 19.8 4.2"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V3m-5 5 5-5 5 5M4 15v5h16v-5"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v13m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+<symbol id="i-audio" viewBox="0 0 24 24"><path d="M3 10v4m4-7v10m5-14v22m5-18v10m4-7v4"/></symbol>
+<symbol id="i-midi" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 4v16m8-16v16M6 4v9m4-9v9m4-9v9m4-9v9"/></symbol>
+<symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m16 10 6-4v12l-6-4"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 16 5-5 4 4 3-3 6 6"/></symbol>
+<symbol id="i-text" viewBox="0 0 24 24"><path d="M4 5V3h16v2M12 3v18m-5 0h10"/></symbol>
+<symbol id="i-script" viewBox="0 0 24 24"><path d="M14 3H5a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9zm0 0v6h6M8 12h8m-8 4h6"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+<symbol id="i-grip" viewBox="0 0 24 24"><path d="M8 5h.01M16 5h.01M8 12h.01M16 12h.01M8 19h.01M16 19h.01" stroke-width="3" stroke-linecap="round"/></symbol>
+<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M12 20V4m-7 7 7-7 7 7"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 10 7-10 7z" fill="currentColor" stroke="none"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12" stroke-width="2.5"/></symbol>
+<symbol id="i-volume" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM15 9q4 3 0 6m3-10q7 7 0 14"/></symbol>
+<symbol id="i-muted" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4zM16 9l6 6m0-6-6 6"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3m-4 0h8"/></symbol>
+<symbol id="i-more" viewBox="0 0 24 24"><path d="M4 12h.01M12 12h.01M20 12h.01" stroke-width="2.8" stroke-linecap="round"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1 1m12 12 1 1M5 19l1-1M18 6l1-1"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 15a9 9 0 0 1-11-11A9 9 0 1 0 20 15Z"/></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 11a8 8 0 1 1 2 7M4 4v7h7"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="4"/><path d="M6 20a6 6 0 0 1 12 0"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 10 5-10 5L2 8zM2 12l10 5 10-5M2 16l10 5 10-5"/></symbol>
+<symbol id="i-loop" viewBox="0 0 24 24"><path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"/></symbol>
+<symbol id="i-next" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+</defs></svg>
+<header class="topbar">
+ <a class="brand" href="./" aria-label="Taan composition home"><img src="assets/taan-mark.svg" alt=""><span>taan<i>.ai</i></span></a>
+ <span class="header-divider"></span><span class="workspace-label">Workspace</span><span class="crumb-slash">/</span><input id="project-title" class="project-title" value="JC composition" aria-label="Composition name" maxlength="70">
+ <div class="header-actions"><span class="saved"><i></i><span id="save-status">All changes saved</span></span><button id="theme-toggle" class="icon-button theme-toggle" aria-label="Switch to reference light palette" title="Switch to reference light palette"><svg><use href="#i-sun"/></svg></button><button id="export" class="export-button"><svg><use href="#i-download"/></svg><span>Export</span></button><button class="avatar" id="profile-button" aria-label="About this local demo"><svg><use href="#i-user"/></svg></button></div>
+</header>
+<main class="workspace">
+ <aside class="inputs-panel" id="inputs-panel" aria-label="Your inputs">
+  <div class="panel-heading"><h2>Your inputs</h2><span class="count" id="input-count">6</span></div><p class="panel-description">Drag an idea into your music.</p>
+  <div class="input-list" id="input-list"></div>
+  <div class="input-actions"><button class="add-input" id="add-input"><svg><use href="#i-plus"/></svg>Add an input</button><button class="write-input" id="write-input"><svg><use href="#i-text"/></svg>Write an idea</button><p>Drop any file here, or click to browse.</p></div>
+ </aside>
+ <section class="composition-panel" aria-label="Your composition">
+  <div class="composition-heading"><div><h1>Your composition</h1><p><i class="status-dot"></i><span id="composition-meta">Every idea has a sound.</span></p></div><button id="style-button" class="style-badge" title="Choose a musical direction" hidden>ORCHESTRAL</button><button id="open-chat" class="icon-button" aria-label="Open composer" title="Open composer"><svg><use href="#i-text"/></svg></button></div>
+  <div class="composition-stage" id="composition-stage">
+   <div class="stage-label" id="stage-label">LISTENING TO YOUR IDEAS</div>
+   <div class="orb-wrap" id="orb-wrap"><div class="orb-glow"></div><svg id="orb" class="orb" viewBox="0 0 500 500" aria-hidden="true"></svg><img class="orb-mark" src="assets/taan-mark.svg" alt="Taan"><span class="orbit-dot dot-one"></span><span class="orbit-dot dot-two"></span></div>
+   <div class="preview-card" id="preview-card"></div>
+   <div class="stage-bottom"><button class="composition-drop" id="composition-drop"><span class="circle-plus"><svg><use href="#i-plus"/></svg></span><span id="drop-label">Drop to shape the music</span><svg class="drop-upload"><use href="#i-upload"/></svg></button><div class="input-types" id="input-types"></div><div class="stage-caption" id="stage-caption">An image. A melody. A feeling. Start anywhere.</div></div>
+  </div>
+  <div class="cycle-strip" aria-label="Composition cycle"><div class="cycle-step" data-phase="prompting"><span class="step-number">01</span><span>Prompt</span><span class="step-time">8s</span></div><span class="step-connector"></span><div class="cycle-step" data-phase="generating"><span class="step-number">02</span><span>Generate</span><span class="step-time" id="generation-duration">8s</span></div><span class="step-connector"></span><div class="cycle-step" data-phase="playing"><span class="step-number">03</span><span>Play</span><span class="step-time">8s</span></div></div>
+  <section class="player" aria-label="Composition player"><div class="player-header"><div><span id="track-title">8-second loop</span><span class="version" id="version">v01</span></div><div class="player-time"><span id="player-state">Ready when you are</span><span id="play-time">00:00 <span>/ 00:08</span></span></div></div><div class="player-main"><button id="play-button" class="play-button" aria-label="Start demo playback"><svg><use href="#i-play"/></svg></button><div class="waveform" id="waveform" role="img" aria-label="Animated energy waveform"><div class="playhead" id="playhead"></div><span class="empty-wave-line"></span></div><span id="loop-count" class="loop-count" aria-live="polite"></span><button id="mute-button" class="icon-button mute-button" title="Silent demo playback" aria-label="Silent demo playback"><svg><use href="#i-muted"/></svg></button></div><div class="player-labels"><span>AUDIO</span><span>MIDI</span><span>VIDEO</span><span>IMAGE</span><span>TEXT</span><span>SCRIPT</span></div></section>
+ </section>
+ <section class="chat-panel" aria-label="Compose with taan">
+  <div class="chat-header"><h2><img class="chat-brand-mark" src="assets/taan-mark.svg" alt="">Compose with taan</h2><div class="menu-wrap"><button id="more-button" class="icon-button" aria-label="Composition options" aria-expanded="false"><svg><use href="#i-more"/></svg></button><div id="options-menu" class="popover" hidden><button id="reset-demo"><svg><use href="#i-reset"/></svg>Start a fresh composition</button><button id="show-timing"><svg><use href="#i-audio"/></svg>How the demo works</button></div></div></div>
+  <div class="chat-messages" id="chat-messages" aria-live="polite"></div>
+  <div class="composer-wrap"><div id="phase-notice" class="phase-notice"><span class="notice-dot"></span><span id="phase-notice-text">A little direction goes a long way.</span><span id="phase-countdown"></span></div><form id="prompt-form" class="composer"><div class="composer-label"><span class="tiny-dot"></span><span id="composer-label">YOUR NEXT IDEA</span></div><div id="pending-attachments" class="pending-attachments"></div><label class="sr-only" for="prompt-input">Describe your musical idea</label><textarea id="prompt-input" rows="3" placeholder="Type your next musical direction…"></textarea><div class="composer-footer"><div class="composer-tools"><button type="button" id="attach-input" class="icon-button" aria-label="Attach a file"><svg><use href="#i-plus"/></svg></button><button type="button" id="voice-input" class="icon-button" aria-label="Dictate an idea"><svg><use href="#i-mic"/></svg></button><span id="composer-hint">Type or drop an idea</span></div><button type="submit" class="send-button" id="send-button" aria-label="Send idea"><svg><use href="#i-arrow"/></svg></button></div></form><div class="composer-note"><span id="demo-indicator">INTERACTIVE DEMO</span><span>Made of your imagination.</span></div></div>
+ </section>
+</main>
+<input type="file" id="file-input" multiple hidden>
+<div id="input-menu" class="input-menu" hidden aria-label="Add to your idea"><div class="input-menu-title">Add to your idea</div><button data-upload-kind="video"><svg><use href="#i-video"/></svg>Video</button><button data-upload-kind="audio"><svg><use href="#i-audio"/></svg>Reference audio</button><button data-upload-kind="image"><svg><use href="#i-image"/></svg>Image</button><button data-upload-kind="script"><svg><use href="#i-script"/></svg>Script</button><button data-upload-kind="midi"><svg><use href="#i-midi"/></svg>MIDI</button><button data-upload-kind="text"><svg><use href="#i-text"/></svg>Text</button><div class="input-menu-divider"></div><button id="combined-inputs"><svg><use href="#i-layers"/></svg>Combined inputs</button></div>
+<input type="file" id="wizard-file-input" multiple hidden>
+<div class="toast" id="toast" role="status" hidden></div>
+<dialog id="info-dialog"><button class="dialog-close icon-button" aria-label="Close dialog"><svg><use href="#i-close"/></svg></button><div id="dialog-content"></div></dialog>
+<dialog id="upload-dialog" class="upload-dialog" aria-labelledby="upload-title"><div id="upload-content"></div></dialog>
+</body></html>
