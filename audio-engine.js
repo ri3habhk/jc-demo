@@ -21,7 +21,7 @@
       // serve fonts and artwork without dropping audio connections.
       for (let i = 0; i < this.manifest.stems.length; i += 2) {
         buffers.push(...await Promise.all(this.manifest.stems.slice(i, i + 2).map(async stem => {
-          const response = await fetch('assets/quiet-current/' + stem.file);
+          const response = await fetch('assets/quiet-current/' + stem.file + (this.manifest.revision ? '?v=' + encodeURIComponent(this.manifest.revision) : ''));
           if (!response.ok) throw new Error('The soundtrack could not be loaded.');
           return response.arrayBuffer();
         })));

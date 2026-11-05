@@ -1,6 +1,6 @@
 # JC demo — Quiet Current
 
-A local Taan composition UI prototype with a clean opening, an empty chat, native file picking and drag-and-drop. The supplied Quiet Current MIDI is split into eight two-bar sections at 60 BPM.
+A local Taan composition UI prototype with a clean opening, an empty chat, native file picking and drag-and-drop. Quiet Current uses eight two-bar sections at 60 BPM, with a revised four-note double bass phrase: B1 → F#2 → G1 → D2, one note every two seconds.
 
 ## Run
 
@@ -44,7 +44,7 @@ Pause freezes the phase clock, waveform, audio and scheduled layer changes toget
 
 ## MIDI and audio
 
-`assets/quiet-current/` contains the original 64-second MIDI, eight standalone 8-second MIDI files, eight matching WAV previews, and a manifest. MIDI files retain instrument tracks, tempo, key, meter, program changes and controller settings. Import at 60 BPM in 4/4; each loop is two bars.
+`assets/quiet-current/` contains the preserved original 64-second MIDI, the revised `Taan_Quiet_Current_Build_64s_FourNoteBass.mid`, eight standalone 8-second MIDI files, eight matching WAV previews, and a manifest. MIDI files retain instrument tracks, tempo, key, meter, program changes and controller settings. Import at 60 BPM in 4/4; each loop is two bars.
 
 | Section | Source time | Arrangement |
 | --- | --- | --- |
@@ -57,7 +57,7 @@ Pause freezes the phase clock, waveform, audio and scheduled layer changes toget
 | 7 | 48–56s | Full arrangement |
 | 8 | 56–64s | Full arrangement |
 
-The browser plays six synchronized instrument stems prepared from the original MIDI parts. Release and reverb tails wrap into the next musical bar; matching cello notes are tied over the phrase boundary. The loop boundary has no whole-mix fade or gap. The eight cumulative WAV previews are also rebuilt from these stems. The prototype does not synthesize arbitrary MIDI or alter notes in response to prompts.
+The browser plays six synchronized instrument stems prepared from the MIDI parts with the four-note bass revision. Release and reverb tails wrap into the next musical bar; matching cello notes are tied over the phrase boundary. The loop boundary has no whole-mix fade or gap. The eight cumulative WAV previews are also rebuilt from these stems. The prototype does not synthesize arbitrary MIDI or alter notes in response to prompts.
 
 Upload reference audio to replace the prepared soundtrack when that idea finishes generation. Uploaded audio plays through its full length, with a short overlapping blend at its own loop seam. It is never rewound at an eight-second UI boundary. Other uploaded files serve as visual or textual references.
 
@@ -67,12 +67,13 @@ The energy player and prompt box share the same width and 108-pixel height. Thei
 
 - Reference audio is a start button and never opens an import dialog. Text selects direct typing in the prompt bar and never opens Finder. The other four cards open an unrestricted native file picker. Any file can still be dropped onto any category, including Reference audio; Add an input and Combined inputs also accept reference audio uploads. The selected category stays on the left; actual file type controls preview and audio decoding.
 - Drop a file directly onto a card to use that category, or onto the panel, center or composer for automatic classification. The plus menu also supports combined inputs.
+- MIDI, image, video and script uploads appear immediately as removable thumbnails inside the prompt box, before you type or send. Images show their actual image, videos show a frame, MIDI shows a note preview, and plain-text scripts show a miniature page. Unsupported previews retain a file-type tile. Multiple attachments scroll horizontally on small screens.
 - Each card fills with colour as soon as it receives a file. Its visual check box remains empty, including after generation.
-- The chat and prompt bar open empty every time, including after a refresh. Previous chat messages, drafts and pending attachments are not restored. Messages appear only after you press Enter or Send. It accepts typed prompts and attachments. There are no seeded prompts or canned assistant replies; authored replies can be added later through the message reply field. A submitted Text prompt colours the Text card, while leaving its check box empty. Ordinary chat prompts outside Text mode do not fill an input card.
+- Refresh starts a completely new composition: empty input cards, chat and prompt bar, no attachments, and no playback progress. Previous uploads, messages and drafts are not restored. Messages appear only after you press Enter or Send. It accepts typed prompts and attachments. There are no seeded prompts or canned assistant replies; authored replies can be added later through the message reply field. A submitted Text prompt colours the Text card, while leaving its check box empty. Ordinary chat prompts outside Text mode do not fill an input card.
 - Rename the composition in the header; switch between the dark live-app styling and light reference palette.
 - Export downloads session metadata and prompt history as JSON; original media is not embedded.
 - The three-dot menu starts a fresh composition or explains the timing.
-- User files and composition preferences stay in this browser's IndexedDB. Chat messages and drafts are kept only for the current page session.
+- Composition data and uploaded files stay only in memory for the current tab. Nothing is saved between reloads. The obsolete saved-session database is cleared when available; old sessions are never read. Only the light/dark theme preference is retained.
 - Optional microphone dictation uses the browser's speech-recognition service after activation.
 
 Files can be up to 250 MB each. Supported media formats depend on the browser. MP3 and WAV work well for audio.

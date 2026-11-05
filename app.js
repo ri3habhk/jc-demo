@@ -13,7 +13,7 @@
   function openChat(focus=false){chatOpen=true;document.body.classList.add('chat-open');if(focus)$('#prompt-input').focus();}
   function addInputRecord(input){const slot=inputs.findIndex(item=>item.placeholder&&item.kind===input.kind);if(slot>=0)inputs.splice(slot,1,input);else inputs.push(input);}
   let phase = 'idle', paused = false, phaseStart = 0, phaseDuration = 0, pauseStarted = 0, iteration = 0, style = 'Orchestral';
-  let activeAudioId = null, muted = false, waiting = false, toastTimer, saveTimer, db = null, restoring = false, currentMessage = null;
+  let activeAudioId = null, muted = false, waiting = false, toastTimer, saveTimer, currentMessage = null;
   const durations = {starting:3000,listening:8000,first:8000,prompting:8000,generating:8000,playing:8000};
   const soundtrack = window.QUIET_CURRENT;
   const engine = new TaanAudio(soundtrack);
@@ -26,6 +26,32 @@
   function objectUrl(input) { if (!input.file) return input.thumb || ''; if (!urlCache.has(input.id)) urlCache.set(input.id, URL.createObjectURL(input.file)); return urlCache.get(input.id); }
   const mediaKind = input => input.mediaKind || input.kind;
   function previewUrl(input) { return mediaKind(input) === 'image' ? objectUrl(input) : input.thumb || ''; }
+  function attachmentThumbnail(input) {
+    const kind=mediaKind(input), url=previewUrl(input), ext=(input.name.split('.').pop()||kind).slice(0,5).toUpperCase();
+    let content=icon(kind==='file'?'script':kind);
+    if(url)content=`<img src="${escape(url)}" alt="" draggable="false">`;
+    else if(kind==='midi'&&input.midiPreview)content=TaanPreviews.pianoRoll(input.midiPreview);
+    else if(input.text)content=`<span class="attachment-page"><span>${escape(input.text.slice(0,180))}</span></span>`;
+    else if(['text','script','file'].includes(kind))content=`<span class="attachment-page attachment-page-fallback">${icon('script')}<b>${escape(ext)}</b></span>`;
+    return `<span class="attachment-thumb" data-media="${kind}">${content}${kind==='video'?`<span class="attachment-video-play">${icon('play')}</span>`:''}</span>`;
+  }
+  async function prepareInputPreview(input) {
+    if(!input.file)return;
+    if(mediaKind(input)==='midi'&&input.file.size<=8*1024*1024){
+      try{input.midiPreview=TaanPreviews.midiPreview(await input.file.arrayBuffer());}catch{}
+    }else if(mediaKind(input)==='video'){
+      input.thumb=await new Promise(resolve=>{
+        const video=document.createElement('video');let done=false;
+        const finish=value=>{if(done)return;done=true;clearTimeout(timer);video.removeAttribute('src');video.load();resolve(value);};
+        const timer=setTimeout(()=>finish(''),8000);
+        video.muted=true;video.playsInline=true;video.preload='auto';
+        const capture=()=>{if(!video.videoWidth)return;try{const canvas=document.createElement('canvas');canvas.width=160;canvas.height=Math.max(1,Math.min(100,Math.round(160*video.videoHeight/video.videoWidth)));canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);finish(canvas.toDataURL('image/jpeg',.78));}catch{finish('');}};
+        video.onloadeddata=()=>{if(video.duration>.15)video.currentTime=Math.min(.25,video.duration/2);else capture();};
+        video.onseeked=capture;video.onerror=()=>finish('');video.src=objectUrl(input);
+      });
+    }
+    if(inputs.includes(input)){renderInputs();renderPending();saveSoon();}
+  }
   function waveformMarkup(count = 37) { return `<div class="mini-wave input-visual">${Array.from({length:count},(_,i)=>`<i style="height:${4+Math.abs(Math.sin(i*1.7)*Math.cos(i*.46))*14}px"></i>`).join('')}</div>`; }
   function miniVisual(input) {
     if (input.kind === 'audio') return waveformMarkup();
@@ -59,7 +85,7 @@
     let media;
     if(mediaKind(input)==='image'||input.thumb) media=`<img class="preview-image" src="${escape(previewUrl(input))}" alt="${escape(input.name)}" draggable="false">`;
     else if(mediaKind(input)==='video'&&input.file) media=`<video class="preview-image" src="${escape(objectUrl(input))}" muted playsinline preload="metadata"></video>`;
-    else if(mediaKind(input)==='midi') media=`<div class="preview-content"><div class="midi-preview">${Array.from({length:12},(_,i)=>`<i style="left:${(i%4)*24}%;top:${(i%3)*28+7}px;width:${16+(i%3)*3}%"></i>`).join('')}</div></div>`;
+    else if(mediaKind(input)==='midi') media=`<div class="preview-content">${input.midiPreview?TaanPreviews.pianoRoll(input.midiPreview):icon('midi')}</div>`;
     else if(input.text) media=`<div class="preview-content"><div class="preview-text">${escape(input.text.slice(0,240))}</div></div>`;
     else if(input.kind==='audio') media=`<div class="preview-content">${waveformMarkup(31)}</div>`;
     else media=`<div class="preview-content">${icon(input.kind==='file'?'script':input.kind)}</div>`;
@@ -81,7 +107,9 @@
     renderInputs();renderPending();if(focus)$('#prompt-input').focus();saveSoon();
   }
   function renderPending() {
-    $('#pending-attachments').innerHTML=pending.map(id=>inputs.find(i=>i.id===id)).filter(Boolean).map(input=>`<span class="pending-chip">${icon(input.kind==='file'?'script':input.kind)}<span>${escape(input.name)}</span><button type="button" aria-label="Remove ${escape(input.name)} attachment" data-remove="${input.id}">${icon('close')}</button></span>`).join('');
+    $('#prompt-form').style.setProperty('--attachment-rail-width',`${Math.min(pending.length,4)*64}px`);
+    $('#pending-attachments').innerHTML=pending.map(id=>inputs.find(i=>i.id===id)).filter(Boolean).map(input=>`<span class="pending-chip" role="group" aria-label="${escape(input.name)} attachment" title="${escape(input.name)}">${attachmentThumbnail(input)}<span class="attachment-name">${escape(input.name)}</span><button type="button" aria-label="Remove ${escape(input.name)} attachment" data-remove="${input.id}">${icon('close')}</button></span>`).join('');
+    $$('#pending-attachments img').forEach(img=>img.onerror=()=>{const thumb=img.closest('.attachment-thumb');thumb.innerHTML=icon(thumb.dataset.media==='video'?'video':'image');});
     $$('[data-remove]').forEach(button=>button.onclick=()=>{pending=pending.filter(id=>id!==button.dataset.remove);renderPending();saveSoon();});
     updateComposerLabel();renderPreview();
   }
@@ -137,7 +165,7 @@
       const entry=wizard.entries[kind],copy=uploadCopy[kind];
       content=`<h2 id="upload-title">${copy[2]}</h2><p class="upload-subtitle">${copy[3]}</p>${entry.files.length?`<div class="upload-file-list">${entry.files.map((file,i)=>`<div class="upload-file-row">${icon(kind)}<div class="upload-file-meta"><strong>${escape(file.name)}</strong><small>${fileSize(file)}</small></div><button class="upload-remove" data-remove-file="${i}" aria-label="Remove ${escape(file.name)}">${icon('close')}</button></div>`).join('')}</div><button class="upload-replace" id="wizard-browse">Replace files</button>`:`<button class="upload-drop" id="wizard-browse"><span class="upload-drop-icon">${icon(kind)}</span><strong>Drop your ${copy[4]} here</strong><small>or click to browse</small></button>`}${['text','script'].includes(kind)?`<label class="upload-text-label" for="wizard-text">Or ${kind==='script'?'paste your script':'write your idea'}</label><textarea class="upload-text" id="wizard-text" placeholder="${kind==='script'?'The scene opens on…':'Describe the sound, mood, or direction…'}">${escape(entry.text)}</textarea>`:''}`;
     }
-    $('#upload-content').innerHTML=`<div class="upload-topline"><span class="upload-step">STEP ${step+1} / ${total}</span><span class="upload-progress"><span style="width:${(step+1)/total*100}%"></span></span><button class="upload-cancel" id="wizard-cancel">Cancel</button></div>${content}<div class="upload-nav">${step?`<button class="upload-back" id="wizard-back">${icon('next')}Back</button>`:''}<button class="upload-next" id="wizard-next" ${(step===0&&!wizard.chosen.length)||(step>0&&!review&&!wizardReady(kind))?'disabled':''}>${review?'Add to composition':'Continue'}${icon('next')}</button></div><p class="upload-privacy">Files stay on your device. Nothing is uploaded to a server.</p>`;
+    $('#upload-content').innerHTML=`<div class="upload-topline"><span class="upload-step">STEP ${step+1} / ${total}</span><span class="upload-progress"><span style="width:${(step+1)/total*100}%"></span></span><button class="upload-cancel" id="wizard-cancel">Cancel</button></div>${content}<div class="upload-nav">${step?`<button class="upload-back" id="wizard-back">${icon('next')}Back</button>`:''}<button class="upload-next" id="wizard-next" ${(step===0&&!wizard.chosen.length)||(step>0&&!review&&!wizardReady(kind))?'disabled':''}>${review?'Add to composition':'Continue'}${icon('next')}</button></div><p class="upload-privacy">Files stay in this tab. Refresh starts a fresh composition.</p>`;
     $('#wizard-cancel').onclick=()=>$('#upload-dialog').close();
     $$('[data-choice]').forEach(button=>button.onclick=()=>{
       const key=button.dataset.choice;
@@ -186,6 +214,7 @@
       const detected=classify(file), kind=hint||detected, input={id:crypto.randomUUID(),name:file.name,kind,mediaKind:detected,file,used:false};
       if(['text','script'].includes(detected)&&(file.type.startsWith('text/')||/\.(txt|md|fountain|json|js|py)$/i.test(file.name))) input.text=(await file.slice(0,16000).text());
       addInputRecord(input);added.push(input);pending.push(input.id);selectedId=input.id;openChat();
+      void prepareInputPreview(input);
       if(detected==='audio'&&phase==='idle')setAudio(input);
     }
     if(added.length){textEntry=false;renderInputs();renderPending();saveSoon();toast(added.length===1?`${added[0].name} added to your next idea.`:`${added.length} files added to your next idea.`);}
@@ -397,10 +426,14 @@
   function toast(message){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').hidden=false;toastTimer=setTimeout(()=>$('#toast').hidden=true,3800);}
   function setTheme(theme){document.documentElement.dataset.theme=theme;try{localStorage.setItem('taan-demo-theme',theme);}catch{}$('#theme-toggle').innerHTML=icon(theme==='dark'?'sun':'moon');$('#theme-toggle').title=theme==='dark'?'Switch to reference light palette':'Switch to Taan dark palette';$('#theme-toggle').setAttribute('aria-label',$('#theme-toggle').title);$('meta[name="theme-color"]').content=theme==='dark'?'#0e0b0a':'#faf8ef';}
   function resetDemo(){pendingPlayback=null;phaseAudioStart=null;textEntry=false;referenceIntro=false;activeLoop=-1;audioSource='score';completedRounds=0;loopStart=0;lastAudioLoop=-1;lastSecond=-1;engine.reset();activeUpload=null;activeAudioId=null;urlCache.forEach(url=>URL.revokeObjectURL(url));urlCache.clear();inputs=emptyInputs();selectedId=null;openChat();pending=[];messages=[];queued=null;phase='idle';paused=false;iteration=0;firstRound=true;waiting=false;currentMessage=null;$('#prompt-input').value='';$('#play-time').innerHTML='00:00 <span>/ 00:08</span>';document.body.classList.remove('paused');waveBars.forEach(b=>b.classList.remove('passed'));renderInputs();renderPending();renderMessages(false);updateUI();clearTimeout(saveTimer);saveSession();toast('A fresh composition. Start with anything.');}
-  function exportSession(){const data={format:'taan-composition-demo',version:2,title:$('#project-title').value,style,exportedAt:new Date().toISOString(),timing:{referenceWaitSeconds:3,referenceMutedListeningSeconds:8,referenceMutedGenerationSeconds:8,initialGenerationSeconds:8,textGenerationSeconds:8,promptSeconds:8,generationSeconds:8,playbackSeconds:8,continuousAudio:true,layerChangesOnBarBoundary:true,phaseOrder:['prompt','generate','play'],scoreLoopSeconds:8,scoreLoopCount:8},soundtrack:{title:soundtrack.title,source:soundtrack.source,activeLoop:activeLoop+1,audioSource},inputs:inputs.filter(i=>!i.placeholder).map(({file,...input})=>({...input,size:file?.size,mimeType:file?.type})),ideas:messages,draft:$('#prompt-input').value,note:'Interface prototype. Uploaded files are stored in the browser and are not embedded in this JSON export.'};const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=($('#project-title').value||'taan-composition').replace(/[^a-z0-9_-]/gi,'-').toLowerCase()+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Session exported. Your original media stays in this browser.');}
-  function saveSoon(){if(restoring)return;$('#save-status').textContent='Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(saveSession,350);}
-  function saveSession(){if(!db){$('#save-status').textContent='Saved for this session';return;}try{const tx=db.transaction('session','readwrite');tx.objectStore('session').put({inputs,selectedId,iteration,style,title:$('#project-title').value,activeAudioId,activeLoop,audioSource,completedRounds,chatOpen,textEntry},'current');tx.oncomplete=()=>$('#save-status').textContent='All changes saved';tx.onerror=()=>$('#save-status').textContent='Saved for this session';}catch{$('#save-status').textContent='Saved for this session';}}
-  async function restoreSession(){try{db=await new Promise((resolve,reject)=>{const req=indexedDB.open('taan-composition-smooth-v5',1);req.onupgradeneeded=()=>req.result.createObjectStore('session');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});const saved=await new Promise((resolve,reject)=>{const req=db.transaction('session','readonly').objectStore('session').get('current');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});if(!saved)return;restoring=true;textEntry=false;inputs=saved.inputs||inputs;selectedId=saved.selectedId||selectedId;pending=[];messages=[];iteration=saved.iteration||0;style=saved.style||style;$('#project-title').value=saved.title||'JC composition';$('#prompt-input').value='';if(saved.chatOpen||messages.length||pending.length)openChat();$('#style-button').textContent=style.toUpperCase();document.title=$('#project-title').value+' — taan';completedRounds=saved.completedRounds||0;const savedAudio=inputs.find(i=>i.id===saved.activeAudioId&&i.file);if(saved.audioSource==='upload'&&savedAudio){setAudio(savedAudio);}else if(Number.isInteger(saved.activeLoop)&&saved.activeLoop>=0){selectScoreLoop(Math.min(saved.activeLoop,soundtrack.loops.length-1));}renderInputs();renderPending();renderMessages(false);updateUI();restoring=false;}catch{$('#save-status').textContent='Saved for this session';}}
+  function exportSession(){const data={format:'taan-composition-demo',version:2,title:$('#project-title').value,style,exportedAt:new Date().toISOString(),timing:{referenceWaitSeconds:3,referenceMutedListeningSeconds:8,referenceMutedGenerationSeconds:8,initialGenerationSeconds:8,textGenerationSeconds:8,promptSeconds:8,generationSeconds:8,playbackSeconds:8,continuousAudio:true,layerChangesOnBarBoundary:true,phaseOrder:['prompt','generate','play'],scoreLoopSeconds:8,scoreLoopCount:8},soundtrack:{title:soundtrack.title,source:soundtrack.source,activeLoop:activeLoop+1,audioSource},inputs:inputs.filter(i=>!i.placeholder).map(({file,...input})=>({...input,size:file?.size,mimeType:file?.type})),ideas:messages,draft:$('#prompt-input').value,note:'Interface prototype. Uploaded files are kept only for this page session and are not embedded in this JSON export.'};const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=($('#project-title').value||'taan-composition').replace(/[^a-z0-9_-]/gi,'-').toLowerCase()+'.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Session exported. Files stay in this tab until refresh.');}
+  function saveSoon(){clearTimeout(saveTimer);saveTimer=setTimeout(saveSession,350);}
+  function saveSession(){$('#save-status').textContent='Session only';}
+  function clearLegacySession(){
+    // Composition data is intentionally memory-only: every refresh starts fresh.
+    try{indexedDB.deleteDatabase('taan-composition-smooth-v5');}catch{}
+    saveSession();
+  }
   // Decorative geometry is deterministic, so the layout has no loading dependency.
   $('#orb').innerHTML=Array.from({length:12},(_,i)=>`<ellipse cx="250" cy="250" rx="${165+i%3*4}" ry="${139+i%4*4}" transform="rotate(${i*15} 250 250)"/>`).join('')+Array.from({length:46},(_,i)=>{const angle=i*2.39996,r=187+(i%7)*7;return `<circle cx="${250+Math.cos(angle)*r}" cy="${250+Math.sin(angle)*r}" r="${i%3===0?1.1:.6}" fill="currentColor" stroke="none" opacity=".55"/>`;}).join('');
   $('#file-input').addEventListener('change',e=>addFiles([...e.target.files],e.target.dataset.kind));
@@ -446,5 +479,5 @@
   };
   window.addEventListener('pagehide',()=>{clearTimeout(saveTimer);saveSession();engine.pause();});
   let initialTheme='dark';try{initialTheme=localStorage.getItem('taan-demo-theme')||'dark';}catch{}setTheme(initialTheme);
-  openChat();renderInputs();renderPending();renderMessages(false);updateUI();restoreSession();requestAnimationFrame(tick);
+  openChat();renderInputs();renderPending();renderMessages(false);updateUI();clearLegacySession();requestAnimationFrame(tick);
 })();
