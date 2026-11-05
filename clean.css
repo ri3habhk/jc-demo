@@ -25,6 +25,10 @@
 .orb-wrap{top:45%;width:420px;height:420px;transition:opacity .25s;pointer-events:none}
 .orb-mark{position:absolute;width:135px;height:90px;object-fit:contain;left:50%;top:50%;transform:translate(-50%,-50%);opacity:.62;filter:sepia(.5)}
 body[data-phase=generating] .orb-mark{animation:logo-generate 8s linear infinite}
+body[data-phase=generating][data-first-round=true] .orb-mark{animation-duration:4s}
+body[data-phase=idle] .orb,body[data-phase=starting] .orb{animation-play-state:paused}
+body[data-phase=listening] .orb{animation:orbit 8s linear infinite}
+body[data-phase=listening] .orb-glow{animation:breathe 2s ease-in-out infinite}
 @keyframes logo-generate{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg)}}
 .orb-glow{opacity:.35}
 [data-theme=dark] .orb{color:#a99470;opacity:.55;stroke-width:.6}

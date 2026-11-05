@@ -14,20 +14,33 @@ Visit http://127.0.0.1:5173. No build, package installation, API key or backend 
 
 ## Timing
 
-Send the first idea to start. The initial prompt has no typing deadline.
+The initial prompt has no typing deadline. Choose Text to write directly in the prompt bar; no import dialog opens. Enter (or the send button) starts 8 seconds of generation, followed by 8 seconds of playback. Shift+Enter adds a new line. Text waits for an explicit send, even if the 8-second prompt window ends. During an active generation or the reference intro, a new submission queues for the next round.
 
-Alternatively, click the Reference audio card: exactly two seconds after the click, the music starts and the central Taan mark begins its generation rotation. The file picker still opens normally. The shortcut works without selecting a file or entering a prompt, and leaves the chat empty. Its four-second generation animation runs over the music, then the usual eight-second phases continue. Repeated clicks do not queue multiple starts; resetting the composition or submitting a prompt cancels the pending shortcut.
+Click the Reference audio card to run the intro. It does not open a file picker or add anything to the chat.
+
+| Time after click | Behaviour |
+| --- | --- |
+| 0–3 seconds | Wait; orb and energy bar remain still and silent |
+| 3–11 seconds | Orb spins; energy bar moves for 8 seconds, muted |
+| 11–15 seconds | R/logo generation animation for 4 seconds, still muted |
+| 15–23 seconds | Music starts at sample zero and plays audibly for 8 seconds |
+| 23–31 seconds | Prompt the next idea for 8 seconds |
+| 31–39 seconds | Generate for 8 seconds |
+| 39–47 seconds | Play the next instrument layer for 8 seconds |
+
+The intro creates no audio sources until the audible pass begins. Its mute control stays locked during the silent passes. The reference card colours after the listening pass; its check box stays empty. Pause freezes the intro clock, and reset cancels it. Repeated Reference audio clicks do not restart an active sequence.
+
 
 | Round | Prompt | Generate | Play |
 | --- | --- | --- | --- |
-| 1 | Submit when ready | 4 seconds | Section 1 for 8 seconds |
+| 1 | Submit when ready | 4 seconds (8 seconds for Text) | Section 1 for 8 seconds |
 | 2 | 8 seconds | 8 seconds | Section 2 for 8 seconds |
 | 3 | 8 seconds | 8 seconds | Section 3 for 8 seconds |
 | Following rounds | 8 seconds | 8 seconds | Next section for 8 seconds |
 
-All six instrument tracks start on the same audio clock and run continuously. Muted layers fade in over 850 milliseconds as their Play phase begins. Existing instruments are never stopped, reloaded, or rewound at a phase boundary. Music continues throughout Prompt and Generate. Each round from Prompt 2 takes 24 seconds. Send early to queue an idea; an unsent nonempty draft submits automatically at the end of Prompt. The timed sequence continues if the prompt is blank, without inventing chat messages.
+All six instrument tracks start on the same audio clock and run continuously. Muted layers fade in over 850 milliseconds as their Play phase begins. Existing instruments are never stopped, reloaded, or rewound at a phase boundary. Music continues throughout Prompt and Generate. Each round from Prompt 2 takes 24 seconds. For file inputs, send early to queue an idea; an unsent nonempty draft submits automatically at the end of Prompt. Text mode lets Enter finish the prompt window early and start generation immediately. In Text mode, the next prompt waits for a send. Otherwise the timed sequence continues if the prompt is blank, without inventing chat messages.
 
-Pause freezes the phase clock, waveform and audio together. Resume continues from that point. The first eight rounds take 180 seconds, excluding initial typing and pauses. After section 8, the complete arrangement keeps looping in the same 8 / 8 / 8 cycle.
+Pause freezes the phase clock, waveform and audio together. Resume continues from that point. The first eight rounds take 191 seconds from a Reference audio click, excluding pauses (or 180 seconds when started by a regular first idea; Text uses 8 seconds of generation and waits for subsequent sends). After section 8, the complete arrangement keeps looping in the same 8 / 8 / 8 cycle.
 
 ## MIDI and audio
 
@@ -52,10 +65,10 @@ Upload reference audio to replace the prepared soundtrack when that idea finishe
 
 The energy player and prompt box share the same width and 108-pixel height. Their top and bottom edges align on desktop; on smaller screens they stack with matching dimensions.
 
-- All six input cards, including Text, open an unrestricted native file picker. Any file can be placed in any category. The selected category stays on the left; actual file type controls preview and audio decoding.
+- Reference audio is a start button and never opens an import dialog. Text selects direct typing in the prompt bar and never opens Finder. The other four cards open an unrestricted native file picker. Any file can still be dropped onto any category, including Reference audio; Add an input and Combined inputs also accept reference audio uploads. The selected category stays on the left; actual file type controls preview and audio decoding.
 - Drop a file directly onto a card to use that category, or onto the panel, center or composer for automatic classification. The plus menu also supports combined inputs.
 - Each card fills with colour as soon as it receives a file. Its visual check box remains empty, including after generation.
-- The chat is visible and empty on a fresh session. It accepts typed prompts and attachments. There are no seeded prompts or canned assistant replies; authored replies can be added later through the message reply field. Plain chat prompts do not fill an input card.
+- The chat is visible and empty on a fresh session. It accepts typed prompts and attachments. There are no seeded prompts or canned assistant replies; authored replies can be added later through the message reply field. A submitted Text prompt colours the Text card, while leaving its check box empty. Ordinary chat prompts outside Text mode do not fill an input card.
 - Rename the composition in the header; switch between the dark live-app styling and light reference palette.
 - Export downloads session metadata and prompt history as JSON; original media is not embedded.
 - The three-dot menu starts a fresh composition or explains the timing.
