@@ -11,7 +11,7 @@
   const launchReasoning = {
     audio:'I’ll preserve your melody’s shape and rhythm, giving it a warm, expressive cello voice.',
     text:'B1 → F♯2 → G1 → D2. Four slow double-bass notes will support the cello while keeping its melody unchanged.',
-    image:'The angel suggests delicate harp; the devil suggests a darker bass presence. I’ll bring that contrast into the arrangement.',
+    image:'The quiet, misty landscape suggests a soft, restrained viola layer. I’ll add sustained strings while keeping the existing melody at the centre.',
     midi:'I’ll follow the MIDI progression with soft, sustained French horns, adding harmonic warmth around the existing melody.',
     video:'The flowing movement suggests a gentle upper violin line. Smooth, connected notes will carry that motion above the existing layers.',
     script:'An airy melody suggests flute; footsteps suggest light percussion. I’ll open the ending into a spacious, hopeful texture.'
@@ -258,7 +258,7 @@
       ['script',/\b(script|ending|flute|footsteps)\b/],
       ['video',/\b(video|clip|violin|violins)\b/],
       ['midi',/\b(midi|progression|horn|horns)\b/],
-      ['image',/\b(image|picture|angel|devil|harp)\b/],
+      ['image',/\b(image|picture|landscape|misty|viola)\b/],
       ['text',/\b(bass|b1|g1|d2)\b|\b(four|4)\s+(slow\s+)?notes\b/],
       ['audio',/\b(hum|humming|hummed|cello)\b|make this a melody/]
     ];

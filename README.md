@@ -80,4 +80,4 @@ Files can be up to 250 MB each. Supported media formats depend on the browser. M
 
 ## Launch-script reasoning
 
-The replies are authored demo copy. They describe the approved cello, four-note bass, angel/devil image, MIDI horns, video violins, and script-ending directions. The current prepared soundtrack still uses viola at the image step and flute without percussion at the ending; adding the replies does not alter audio assets or timing.
+The replies are authored demo copy. They describe the approved cello, four-note bass, misty-landscape image with restrained viola, MIDI horns, video violins, and script-ending directions. The image reasoning follows the revised launch script and matches the prepared viola layer. The current prepared soundtrack still uses flute without percussion at the ending; adding the replies does not alter audio assets or timing.
